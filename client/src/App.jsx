@@ -57,7 +57,7 @@ const App = () => {
     <>
       <BrowserRouter>
         <Header />
-        <main className="w-full pt-20 min-h-screen bg-zinc-950 text-white">
+        <main className="w-full pt-20 min-h-screen bg-[#fafbfc] text-slate-800">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />

@@ -1,43 +1,30 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useParams, Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import {
   FaMapMarkerAlt,
-  FaClock,
-  FaCompass,
-  FaMountain,
   FaBus,
   FaCheckCircle,
   FaTimesCircle,
   FaCalendarAlt,
   FaWhatsapp,
-  FaPhoneAlt,
   FaStar,
-  FaShieldAlt,
   FaSuitcaseRolling,
-  FaExclamationTriangle,
-  FaUsers
+  FaExclamationTriangle
 } from "react-icons/fa";
 import { getTrekByIdOrSlug, TREK_PACKAGES, ROAMING_BIRDS_CONTACTS } from "../data/roamingBirdsData";
 import BookingModal from "./components/BookingModal";
-import RatingCard from "./RatingCard";
 
 const API = import.meta.env.VITE_API_URL;
 
 const Package = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { currentUser } = useSelector((state) => state.user);
-
   const [activeTab, setActiveTab] = useState("itinerary");
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  // Default to matching authentic trek or first trek
   const [trek, setTrek] = useState(() => {
     return getTrekByIdOrSlug(id) || TREK_PACKAGES[0];
   });
@@ -45,22 +32,18 @@ const Package = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Try finding in authentic local data first
     const foundLocal = getTrekByIdOrSlug(id);
     if (foundLocal) {
       setTrek(foundLocal);
       return;
     }
 
-    // Otherwise try fetching from backend API
     const fetchPackage = async () => {
       try {
-        setLoading(true);
         if (API) {
           const res = await fetch(`${API}/api/package/get-package-data/${id}`);
           const data = await res.json();
           if (data?.success && data?.packageData) {
-            // merge with defaults
             setTrek({
               ...TREK_PACKAGES[0],
               ...data.packageData,
@@ -74,8 +57,6 @@ const Package = () => {
         }
       } catch (err) {
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchPackage();
@@ -86,39 +67,39 @@ const Package = () => {
   const advance = trek.advanceAmount || 500;
 
   return (
-    <div className="w-full bg-zinc-950 text-white min-h-screen -mt-20 pt-24 pb-20">
+    <div className="w-full bg-[#fafbfc] text-slate-800 min-h-screen -mt-20 pt-24 pb-20">
       {/* Top Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-xs text-zinc-400 flex items-center gap-2">
-        <Link to="/" className="hover:text-emerald-400">Home</Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-xs text-slate-500 flex items-center gap-2">
+        <Link to="/" className="hover:text-emerald-700">Home</Link>
         <span>/</span>
-        <Link to="/search" className="hover:text-emerald-400">Treks</Link>
+        <Link to="/search" className="hover:text-emerald-700">Treks</Link>
         <span>/</span>
-        <span className="text-zinc-200 truncate">{trek.packageName}</span>
+        <span className="text-slate-800 font-semibold truncate">{trek.packageName}</span>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Title Header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-600 text-white">
+            <span className="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
               {trek.badge || "Monsoon Trek"}
             </span>
-            <span className="px-3 py-1 rounded-md text-xs font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+            <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
               Grade: {trek.difficulty || "Moderate"}
             </span>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-zinc-900 text-xs font-semibold text-white border border-zinc-800">
-              <FaStar className="text-yellow-400" size={12} />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white text-xs font-bold text-slate-800 border border-slate-200 shadow-xs">
+              <FaStar className="text-amber-500" size={12} />
               <span>{trek.packageRating || 4.9}</span>
-              <span className="text-zinc-400">({trek.packageTotalRatings || 180} reviews)</span>
+              <span className="text-slate-400 font-normal">({trek.packageTotalRatings || 180} reviews)</span>
             </div>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
             {trek.packageName}
           </h1>
 
-          <p className="mt-2 text-sm sm:text-base text-zinc-400 flex items-center gap-2">
-            <FaMapMarkerAlt className="text-emerald-400 shrink-0" />
+          <p className="mt-2 text-sm sm:text-base text-slate-600 flex items-center gap-2">
+            <FaMapMarkerAlt className="text-emerald-600 shrink-0" />
             <span>
               {trek.baseVillage ? `Base Village: ${trek.baseVillage} • ` : ""}
               {trek.region ? `Region: ${trek.region} • ` : ""}
@@ -128,7 +109,7 @@ const Package = () => {
         </div>
 
         {/* Gallery / Swiper Hero */}
-        <div className="w-full h-[320px] sm:h-[450px] rounded-3xl overflow-hidden shadow-2xl mb-10 bg-zinc-900 border border-zinc-800 relative">
+        <div className="w-full h-[320px] sm:h-[450px] rounded-3xl overflow-hidden shadow-md mb-10 bg-slate-100 border border-slate-200 relative">
           <Swiper
             modules={[Navigation, Autoplay]}
             navigation
@@ -146,57 +127,57 @@ const Package = () => {
               </SwiperSlide>
             ))}
           </Swiper>
-          <div className="absolute bottom-4 right-4 z-10 px-3 py-1.5 rounded-xl bg-zinc-950/80 backdrop-blur-md text-xs font-semibold text-zinc-200 border border-zinc-700">
+          <div className="absolute bottom-4 right-4 z-10 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md text-xs font-bold text-slate-800 border border-slate-200 shadow-sm">
             📸 Western Ghats Trail Photos
           </div>
         </div>
 
         {/* Trek Stats Summary Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Trail Type</span>
-            <span className="text-sm font-bold text-white line-clamp-1">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-xs text-slate-500 block mb-1">Trail Type</span>
+            <span className="text-sm font-bold text-slate-900 line-clamp-1">
               {trek.trailType || "Jungle Trail"}
             </span>
           </div>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Difficulty</span>
-            <span className="text-sm font-bold text-emerald-400">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-xs text-slate-500 block mb-1">Difficulty</span>
+            <span className="text-sm font-bold text-emerald-700">
               {trek.difficulty || "Easy to Moderate"}
             </span>
           </div>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Endurance</span>
-            <span className="text-sm font-bold text-white">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-xs text-slate-500 block mb-1">Endurance</span>
+            <span className="text-sm font-bold text-slate-900">
               {trek.endurance || "Medium / Average"}
             </span>
           </div>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Trek Distance</span>
-            <span className="text-sm font-bold text-white">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-xs text-slate-500 block mb-1">Trek Distance</span>
+            <span className="text-sm font-bold text-slate-900">
               {trek.trailLength || "7 km (One side)"}
             </span>
           </div>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Duration</span>
-            <span className="text-sm font-bold text-white">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-xs text-slate-500 block mb-1">Duration</span>
+            <span className="text-sm font-bold text-slate-900">
               {trek.duration || "3 hrs (One side)"}
             </span>
           </div>
-          <div className="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-            <span className="text-xs text-zinc-400 block mb-1">Best Season</span>
-            <span className="text-sm font-bold text-white">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-xs text-slate-500 block mb-1">Best Season</span>
+            <span className="text-sm font-bold text-slate-900">
               {trek.bestTime || "June to October"}
             </span>
           </div>
         </div>
 
-        {/* Main Content Layout (2 Columns: Left Tabs, Right Sticky Booking Card) */}
+        {/* Main Content Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column (8 cols): Tabs & Details */}
           <div className="lg:col-span-8 space-y-8">
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto scrollbar-none">
               {[
                 { id: "itinerary", label: "Itinerary" },
                 { id: "pickups", label: "Pickup Points" },
@@ -209,8 +190,8 @@ const Package = () => {
                   onClick={() => setActiveTab(t.id)}
                   className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition ${
                     activeTab === t.id
-                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-900/40"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                   }`}
                 >
                   {t.label}
@@ -222,9 +203,9 @@ const Package = () => {
             {activeTab === "itinerary" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Trek Itinerary & Timelines</h3>
-                  <p className="text-sm text-zinc-400">
-                    Schedule may vary slightly depending on weather and trail traffic conditions.
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">Trek Itinerary & Timelines</h3>
+                  <p className="text-sm text-slate-500">
+                    Schedule may vary slightly depending on weather and trail speed.
                   </p>
                 </div>
 
@@ -232,22 +213,22 @@ const Package = () => {
                   {(trek.itinerary || []).map((dayPlan, idx) => (
                     <div
                       key={idx}
-                      className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800"
+                      className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm"
                     >
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                           {dayPlan.day}
                         </span>
-                        <h4 className="text-base font-bold text-white">{dayPlan.title}</h4>
+                        <h4 className="text-base font-bold text-slate-900">{dayPlan.title}</h4>
                       </div>
 
                       <ul className="space-y-3">
                         {dayPlan.items?.map((item, itemIdx) => (
                           <li
                             key={itemIdx}
-                            className="flex items-start gap-3 text-sm text-zinc-300"
+                            className="flex items-start gap-3 text-sm text-slate-700"
                           >
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-600 mt-2 shrink-0"></span>
                             <span>{item}</span>
                           </li>
                         ))}
@@ -262,26 +243,26 @@ const Package = () => {
             {activeTab === "pickups" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Pickup Stops & Times</h3>
-                  <p className="text-sm text-zinc-400">
-                    AC Private Bus for Mumbai and Non-AC for Pune. Please reach your chosen stop 10 minutes prior to boarding time.
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">Pickup Stops & Times</h3>
+                  <p className="text-sm text-slate-500">
+                    AC Private Bus for Mumbai and Non-AC for Pune. Please reach your stop 10 mins prior.
                   </p>
                 </div>
 
                 {/* Mumbai Pickups */}
-                <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <h4 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <FaBus className="text-emerald-400" />
+                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <h4 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <FaBus className="text-emerald-600" />
                     Mumbai Pickups (AC Bus)
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(trek.mumbaiPickups || []).map((p, idx) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between"
+                        className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between"
                       >
-                        <span className="text-xs font-semibold text-zinc-200">{p.location}</span>
-                        <span className="text-xs font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-950/50">
+                        <span className="text-xs font-bold text-slate-800">{p.location}</span>
+                        <span className="text-xs font-bold text-emerald-800 px-2.5 py-0.5 rounded bg-emerald-100">
                           {p.time}
                         </span>
                       </div>
@@ -290,19 +271,19 @@ const Package = () => {
                 </div>
 
                 {/* Pune Pickups */}
-                <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <h4 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                    <FaBus className="text-blue-400" />
+                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                  <h4 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <FaBus className="text-blue-600" />
                     Pune Pickups
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(trek.punePickups || []).map((p, idx) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between"
+                        className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between"
                       >
-                        <span className="text-xs font-semibold text-zinc-200">{p.location}</span>
-                        <span className="text-xs font-bold text-blue-400 px-2 py-0.5 rounded bg-blue-950/50">
+                        <span className="text-xs font-bold text-slate-800">{p.location}</span>
+                        <span className="text-xs font-bold text-blue-800 px-2.5 py-0.5 rounded bg-blue-100">
                           {p.time}
                         </span>
                       </div>
@@ -316,22 +297,22 @@ const Package = () => {
             {activeTab === "inclusions" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Cost Inclusions & Exclusions</h3>
-                  <p className="text-sm text-zinc-400">
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">Cost Inclusions & Exclusions</h3>
+                  <p className="text-sm text-slate-500">
                     Transparent pricing with zero hidden charges.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Inclusions */}
-                  <div className="p-6 rounded-2xl bg-zinc-900 border border-emerald-900/50">
-                    <h4 className="text-base font-bold text-emerald-400 mb-4 flex items-center gap-2">
-                      <FaCheckCircle /> Cost Includes:
+                  <div className="p-6 rounded-2xl bg-white border border-emerald-200 shadow-sm">
+                    <h4 className="text-base font-bold text-emerald-800 mb-4 flex items-center gap-2">
+                      <FaCheckCircle className="text-emerald-600" /> Cost Includes:
                     </h4>
                     <ul className="space-y-3">
                       {(trek.inclusions || []).map((inc, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-300">
-                          <FaCheckCircle className="text-emerald-500 mt-0.5 shrink-0" size={14} />
+                        <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
+                          <FaCheckCircle className="text-emerald-600 mt-0.5 shrink-0" size={14} />
                           <span>{inc}</span>
                         </li>
                       ))}
@@ -339,14 +320,14 @@ const Package = () => {
                   </div>
 
                   {/* Exclusions */}
-                  <div className="p-6 rounded-2xl bg-zinc-900 border border-red-900/40">
-                    <h4 className="text-base font-bold text-red-400 mb-4 flex items-center gap-2">
-                      <FaTimesCircle /> Cost Excludes:
+                  <div className="p-6 rounded-2xl bg-white border border-rose-200 shadow-sm">
+                    <h4 className="text-base font-bold text-rose-800 mb-4 flex items-center gap-2">
+                      <FaTimesCircle className="text-rose-600" /> Cost Excludes:
                     </h4>
                     <ul className="space-y-3">
                       {(trek.exclusions || []).map((exc, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-zinc-400">
-                          <FaTimesCircle className="text-red-500 mt-0.5 shrink-0" size={14} />
+                        <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-600">
+                          <FaTimesCircle className="text-rose-500 mt-0.5 shrink-0" size={14} />
                           <span>{exc}</span>
                         </li>
                       ))}
@@ -360,9 +341,9 @@ const Package = () => {
             {activeTab === "whatToCarry" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Packing Essentials Checklist</h3>
-                  <p className="text-sm text-zinc-400">
-                    Pack light and protect items from rain inside waterproof plastic pouches.
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">Packing Essentials Checklist</h3>
+                  <p className="text-sm text-slate-500">
+                    Pack light and protect your essentials with waterproof pouches.
                   </p>
                 </div>
 
@@ -370,32 +351,32 @@ const Package = () => {
                   {(trek.whatToCarry || []).map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-3"
+                      className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center gap-3"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
                         <FaSuitcaseRolling size={14} />
                       </div>
-                      <span className="text-sm font-semibold text-zinc-200">{item}</span>
+                      <span className="text-sm font-bold text-slate-800">{item}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* TAB 5: RULES & IMPORTANT NOTES */}
+            {/* TAB 5: RULES & NOTES */}
             {activeTab === "rules" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Trek Rules & Safety Guidelines</h3>
-                  <p className="text-sm text-zinc-400">
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">Trek Rules & Safety Guidelines</h3>
+                  <p className="text-sm text-slate-500">
                     Your safety and nature conservation are our highest priorities.
                   </p>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-zinc-900 border border-yellow-800/40 space-y-4">
+                <div className="p-6 rounded-2xl bg-white border border-amber-200 shadow-sm space-y-4">
                   {(trek.importantRules || []).map((rule, idx) => (
-                    <div key={idx} className="flex items-start gap-3 text-sm text-zinc-300">
-                      <FaExclamationTriangle className="text-yellow-500 mt-1 shrink-0" size={14} />
+                    <div key={idx} className="flex items-start gap-3 text-sm text-slate-700">
+                      <FaExclamationTriangle className="text-amber-600 mt-1 shrink-0" size={14} />
                       <span>{rule}</span>
                     </div>
                   ))}
@@ -406,44 +387,44 @@ const Package = () => {
 
           {/* Right Column (4 cols): Sticky Booking Card */}
           <div className="lg:col-span-4 sticky top-28">
-            <div className="p-6 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl space-y-6">
+            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-lg space-y-6">
               {/* Pricing breakdown */}
               <div>
-                <span className="text-xs text-zinc-400 block">Trek Fees</span>
+                <span className="text-xs text-slate-500 block">Trek Fees</span>
                 <div className="flex items-baseline justify-between mt-1">
                   <div>
-                    <span className="text-2xl font-extrabold text-white">
+                    <span className="text-2xl font-extrabold text-slate-900">
                       ₹{mumbaiPrice}
                     </span>
-                    <span className="text-xs text-zinc-400 ml-1">(Mumbai AC Bus)</span>
+                    <span className="text-xs text-slate-500 ml-1">(Mumbai AC Bus)</span>
                   </div>
                   <div>
-                    <span className="text-xl font-extrabold text-emerald-400">
+                    <span className="text-xl font-extrabold text-emerald-700">
                       ₹{punePrice}
                     </span>
-                    <span className="text-xs text-zinc-400 ml-1">(Pune Non-AC)</span>
+                    <span className="text-xs text-slate-500 ml-1">(Pune Non-AC)</span>
                   </div>
                 </div>
 
-                <div className="mt-3 p-3 rounded-xl bg-emerald-950/50 border border-emerald-800/60 text-xs text-emerald-300 font-semibold">
+                <div className="mt-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 font-semibold">
                   ⚡ Confirm seat with advance deposit: ₹{advance}/- only!
-                  <span className="block text-[11px] font-normal text-emerald-400 mt-0.5">
+                  <span className="block text-[11px] font-normal text-emerald-700 mt-0.5">
                     Balance amount payable on trek day.
                   </span>
                 </div>
               </div>
 
-              {/* Batch reminder */}
-              <div className="text-xs text-zinc-300 flex items-center gap-2 border-t border-zinc-800 pt-4">
-                <FaCalendarAlt className="text-emerald-400" />
-                <span>{trek.batchSchedule || "Every Saturday Night Departure"}</span>
+              {/* Batch schedule */}
+              <div className="text-xs text-slate-600 flex items-center gap-2 border-t border-slate-100 pt-4">
+                <FaCalendarAlt className="text-emerald-600" />
+                <span className="font-medium">{trek.batchSchedule || "Every Saturday Night Departure"}</span>
               </div>
 
               {/* Instant Slot Confirmation CTA */}
               <button
                 type="button"
                 onClick={() => setShowBookingModal(true)}
-                className="w-full py-4 rounded-xl font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-98 transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-base"
+                className="w-full py-4 rounded-xl font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 transition shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 text-base"
               >
                 <span>Book Slot (Advance ₹{advance})</span>
               </button>
@@ -453,29 +434,29 @@ const Package = () => {
                 href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}?text=Hi%20The%20Roaming%20Birds!%20I%20want%20to%20book%20a%20slot%20for%20${encodeURIComponent(trek.packageName)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3 rounded-xl font-bold text-xs text-emerald-400 bg-zinc-950 border border-emerald-500/30 hover:bg-zinc-800 flex items-center justify-center gap-2 transition"
+                className="w-full py-3 rounded-xl font-bold text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center gap-2 transition"
               >
                 <FaWhatsapp size={16} />
                 <span>Chat with Trek Leader</span>
               </a>
 
               {/* Direct Call Contacts */}
-              <div className="border-t border-zinc-800 pt-4 text-xs text-zinc-400 space-y-2">
+              <div className="border-t border-slate-100 pt-4 text-xs text-slate-600 space-y-2">
                 <div className="flex justify-between items-center">
                   <span>Pratik:</span>
-                  <a href={`tel:${ROAMING_BIRDS_CONTACTS.pratikPhone}`} className="text-white font-bold hover:text-emerald-400">
+                  <a href={`tel:${ROAMING_BIRDS_CONTACTS.pratikPhone}`} className="text-slate-900 font-bold hover:text-emerald-700">
                     {ROAMING_BIRDS_CONTACTS.pratikPhone}
                   </a>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Uddhav:</span>
-                  <a href={`tel:${ROAMING_BIRDS_CONTACTS.uddhavPhone}`} className="text-white font-bold hover:text-emerald-400">
+                  <a href={`tel:${ROAMING_BIRDS_CONTACTS.uddhavPhone}`} className="text-slate-900 font-bold hover:text-emerald-700">
                     {ROAMING_BIRDS_CONTACTS.uddhavPhone}
                   </a>
                 </div>
-                <div className="flex justify-between items-center pt-1 border-t border-zinc-800">
+                <div className="flex justify-between items-center pt-1 border-t border-slate-100">
                   <span>UPI ID:</span>
-                  <span className="text-emerald-400 font-mono font-bold">
+                  <span className="text-emerald-700 font-mono font-bold">
                     {ROAMING_BIRDS_CONTACTS.upiNumber} ({ROAMING_BIRDS_CONTACTS.upiHolderName})
                   </span>
                 </div>

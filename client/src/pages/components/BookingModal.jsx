@@ -3,11 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTimes,
   FaWhatsapp,
-  FaCheckCircle,
   FaCopy,
   FaShieldAlt,
   FaBus,
-  FaMapMarkerAlt,
   FaQrcode
 } from "react-icons/fa";
 import { ROAMING_BIRDS_CONTACTS } from "../../data/roamingBirdsData";
@@ -72,31 +70,31 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 p-6 md:p-8"
+          className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-slate-200 text-slate-800 p-6 md:p-8"
         >
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition"
           >
             <FaTimes size={18} />
           </button>
 
           {/* Header */}
-          <div className="border-b border-zinc-200 dark:border-zinc-800 pb-4 mb-6">
-            <span className="inline-block px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 rounded-full mb-2">
+          <div className="border-b border-slate-100 pb-4 mb-6">
+            <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 rounded-full mb-2">
               Slot Confirmation
             </span>
-            <h3 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-white">
+            <h3 className="text-xl md:text-2xl font-extrabold text-slate-900">
               {trek.packageName}
             </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-2">
+            <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
               <FaBus className="text-emerald-600" />
               {trek.batchSchedule || "Upcoming Weekend Batches"}
             </p>
@@ -105,7 +103,7 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
           <form onSubmit={handleWhatsAppBooking} className="space-y-6">
             {/* City Selector */}
             <div>
-              <label className="block text-sm font-semibold mb-2">
+              <label className="block text-xs font-bold text-slate-700 mb-2">
                 Select Departure City
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -118,13 +116,13 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
                       pickupLocation: trek.mumbaiPickups?.[0]?.location || "",
                     });
                   }}
-                  className={`py-3 px-4 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition ${
+                  className={`py-3 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition ${
                     city === "Mumbai"
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-                      : "border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
                   Mumbai (₹{trek.mumbaiPrice || trek.packagePrice}/-)
                 </button>
                 <button
@@ -136,22 +134,22 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
                       pickupLocation: trek.punePickups?.[0]?.location || "",
                     });
                   }}
-                  className={`py-3 px-4 rounded-xl border text-sm font-semibold flex items-center justify-center gap-2 transition ${
+                  className={`py-3 px-4 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition ${
                     city === "Pune"
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-                      : "border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-xs"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                   Pune (₹{trek.punePrice || trek.packageDiscountPrice || trek.packagePrice}/-)
                 </button>
               </div>
             </div>
 
-            {/* Inputs: Name, Phone, Trekkers */}
+            {/* Inputs: Name, Phone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Full Name *
                 </label>
                 <input
@@ -162,12 +160,12 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   WhatsApp Contact Number *
                 </label>
                 <input
@@ -178,7 +176,7 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -186,7 +184,7 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Pickup Point Selection */}
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Pickup Point ({city})
                 </label>
                 <select
@@ -194,7 +192,7 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
                   onChange={(e) =>
                     setFormData({ ...formData, pickupLocation: e.target.value })
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   {currentPickups?.map((p, idx) => (
                     <option key={idx} value={p.location}>
@@ -206,7 +204,7 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
 
               {/* Number of trekkers */}
               <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Number of Trekkers
                 </label>
                 <input
@@ -220,38 +218,38 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
                       participants: Math.max(1, parseInt(e.target.value) || 1),
                     })
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
 
             {/* Advance Payment Details Box */}
-            <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
               <div className="flex items-start justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                  <h4 className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
                     <FaQrcode /> Slot Confirmation Advance: ₹{totalAdvance}/-
                   </h4>
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                  <p className="text-xs text-emerald-800 mt-0.5">
                     (₹{advancePerPerson}/- per person to lock seat. Remaining ₹{totalCost - totalAdvance}/- pay on trek day)
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-600 text-white rounded-md">
+                <span className="text-xs font-bold px-2.5 py-1 bg-emerald-600 text-white rounded-md">
                   Total: ₹{totalCost}/-
                 </span>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-emerald-200 dark:border-emerald-800/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="mt-3 pt-3 border-t border-emerald-200 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div>
-                  <span className="text-zinc-600 dark:text-zinc-400">UPI Number / GPay / PhonePe: </span>
-                  <span className="font-mono font-bold text-zinc-900 dark:text-white">
+                  <span className="text-slate-600">UPI Number / GPay / PhonePe: </span>
+                  <span className="font-mono font-bold text-slate-900">
                     {ROAMING_BIRDS_CONTACTS.upiNumber} ({ROAMING_BIRDS_CONTACTS.upiHolderName})
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleCopyUPI}
-                  className="px-2.5 py-1 text-xs rounded bg-white dark:bg-zinc-800 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 flex items-center gap-1 text-emerald-800 dark:text-emerald-200 transition"
+                  className="px-2.5 py-1 text-xs font-semibold rounded bg-white border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1 text-emerald-800 transition"
                 >
                   <FaCopy size={11} /> {copiedUPI ? "Copied!" : "Copy UPI"}
                 </button>
@@ -262,13 +260,13 @@ const BookingModal = ({ isOpen, onClose, trek }) => {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 text-base"
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] transition shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 text-base"
               >
                 <FaWhatsapp size={20} />
                 Send Booking Details on WhatsApp (+91 83298 15405)
               </button>
-              <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-2 flex items-center justify-center gap-1.5">
-                <FaShieldAlt className="text-emerald-500" />
+              <p className="text-center text-xs text-slate-500 mt-2 flex items-center justify-center gap-1.5">
+                <FaShieldAlt className="text-emerald-600" />
                 Instant confirmation by Uddhav & Pratik • Added to WhatsApp batch group
               </p>
             </div>

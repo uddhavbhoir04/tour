@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
-  FaCompass,
-  FaShieldAlt,
-  FaUtensils,
-  FaBus,
-  FaUsers,
-  FaWhatsapp,
-  FaPhoneAlt,
-  FaMapMarkedAlt,
-  FaCheckCircle,
-  FaStar,
   FaCalendarAlt,
-  FaMountain
+  FaBus,
+  FaUtensils,
+  FaShieldAlt,
+  FaUsers,
+  FaMapMarkedAlt,
+  FaWhatsapp,
+  FaArrowRight,
+  FaCheck
 } from "react-icons/fa";
 import HeroImage from "./components/HeroImage";
 import SingleCard from "./components/SingleCard";
@@ -35,7 +31,6 @@ const Home = () => {
   const [packagesList, setPackagesList] = useState(TREK_PACKAGES);
   const [activeCityTab, setActiveCityTab] = useState("mumbai");
 
-  // Attempt to fetch from backend, but always fallback to official Roaming Birds packages
   useEffect(() => {
     const fetchBackendPackages = async () => {
       try {
@@ -43,7 +38,6 @@ const Home = () => {
         const res = await fetch(`${API}/api/package/get-packages?limit=10`);
         const data = await res.json();
         if (data?.success && data?.packages?.length > 0) {
-          // Merge API packages with authentic Roaming Birds treks
           const apiIds = new Set(data.packages.map((p) => p.packageName?.toLowerCase()));
           const extra = TREK_PACKAGES.filter(
             (p) => !apiIds.has(p.packageName.toLowerCase())
@@ -51,14 +45,12 @@ const Home = () => {
           setPackagesList([...data.packages, ...extra]);
         }
       } catch (err) {
-        // Fallback gracefully to default authentic data
         setPackagesList(TREK_PACKAGES);
       }
     };
     fetchBackendPackages();
   }, []);
 
-  // Filter packages based on activeCategory
   const filteredPackages = packagesList.filter((pkg) => {
     if (activeCategory === "all") return true;
     const name = (pkg.packageName || "").toLowerCase();
@@ -84,7 +76,7 @@ const Home = () => {
   });
 
   return (
-    <div className="w-full bg-zinc-950 text-white min-h-screen">
+    <div className="w-full bg-[#fafbfc] text-slate-800 min-h-screen">
       {/* 1. Hero Section */}
       <HeroImage />
 
@@ -92,36 +84,36 @@ const Home = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div>
-            <span className="text-emerald-400 text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+            <span className="text-emerald-700 text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-2">
               <FaCalendarAlt /> Weekend Batches Open
             </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-white mt-1">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-1">
               Featured Sahyadri Expeditions
             </h2>
-            <p className="text-sm text-zinc-400 mt-1 max-w-xl">
-              Lock your slot for just ₹500 - ₹700 advance. Unlimited authentic village meals, AC transport & certified guides included.
+            <p className="text-sm text-slate-500 mt-1 max-w-xl">
+              Lock your slot with just ₹500 - ₹700 advance. Unlimited authentic village meals, AC transport & certified guides included.
             </p>
           </div>
 
           <Link
             to="/search"
-            className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition"
+            className="hidden sm:inline-flex items-center gap-2 text-sm font-bold text-emerald-700 hover:text-emerald-800 transition"
           >
             <span>View All Schedules</span>
             <span>&rarr;</span>
           </Link>
         </div>
 
-        {/* Category Pills (Trekkaro style) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none mb-8">
+        {/* Category Pills */}
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-4 scrollbar-none mb-8">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 border ${
+              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 border ${
                 activeCategory === cat.id
-                  ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-900/30"
-                  : "bg-zinc-900/80 border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700"
+                  ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
+                  : "bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs"
               }`}
             >
               {cat.label}
@@ -137,58 +129,58 @@ const Home = () => {
         </div>
       </section>
 
-      {/* 3. Why Choose The Roaming Birds (Trust Grid) */}
-      <section className="bg-zinc-900/50 border-y border-zinc-800/80 py-16">
+      {/* 3. Why Choose The Roaming Birds */}
+      <section className="bg-slate-50/70 border-y border-slate-200/80 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider">
+            <span className="text-emerald-700 text-xs font-bold uppercase tracking-wider">
               The TRB Standard
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
               Why 12,000+ Adventurers Choose Us
             </h2>
-            <p className="text-zinc-400 text-sm mt-2">
+            <p className="text-slate-500 text-sm mt-2">
               We make trekking in Maharashtra safe, memorable, and hassle-free with end-to-end management.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800/80 hover:border-emerald-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xl mb-4 border border-emerald-100">
                 <FaBus />
               </div>
-              <h3 className="text-base font-bold text-white mb-2">Comfortable Transport</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <h3 className="text-base font-bold text-slate-900 mb-2">Comfortable Transport</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Clean AC / Non-AC private buses with pickups across Mumbai (Borivali to Kalyan) & Pune (Shivajinagar to Hinjewadi).
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800/80 hover:border-emerald-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl mb-4 border border-amber-100">
                 <FaUtensils />
               </div>
-              <h3 className="text-base font-bold text-white mb-2">Unlimited Local Food</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <h3 className="text-base font-bold text-slate-900 mb-2">Unlimited Local Food</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Authentic, piping-hot breakfast and rural village lunch cooked by local families (Veg, Non-Veg, and Jain options).
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800/80 hover:border-emerald-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-xl mb-4 border border-teal-100">
                 <FaShieldAlt />
               </div>
-              <h3 className="text-base font-bold text-white mb-2">Safety & First Aid</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <h3 className="text-base font-bold text-slate-900 mb-2">Safety & First Aid</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Certified trek leaders, local village guides, forest permits, first aid kits, and a strict 100% zero-alcohol policy.
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800/80 hover:border-emerald-500/40 transition">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-xl mb-4 border border-blue-100">
                 <FaUsers />
               </div>
-              <h3 className="text-base font-bold text-white mb-2">Solo & Female Friendly</h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
+              <h3 className="text-base font-bold text-slate-900 mb-2">Solo & Female Friendly</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Warm and inclusive community atmosphere where solo travelers make lifelong trek buddies.
               </p>
             </div>
@@ -196,30 +188,30 @@ const Home = () => {
         </div>
       </section>
 
-      {/* 4. Pickup Points Quick Lookup (Mumbai & Pune Routes) */}
+      {/* 4. Pickup Points Breakdown */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="rounded-3xl bg-gradient-to-r from-zinc-900 via-zinc-900 to-emerald-950/40 border border-zinc-800 p-6 sm:p-10">
+        <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-10 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div>
-              <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <FaMapMarkedAlt /> Seamless Boarding
               </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
                 Pickup Points & Timelines
               </h2>
-              <p className="text-zinc-400 text-sm mt-1">
+              <p className="text-slate-500 text-sm mt-1">
                 Multiple convenient boarding stops along Western Express Highway, Eastern Express Highway & Pune bypass.
               </p>
             </div>
 
             {/* City Tabs */}
-            <div className="flex items-center gap-2 bg-zinc-950 p-1.5 rounded-xl border border-zinc-800">
+            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
               <button
                 onClick={() => setActiveCityTab("mumbai")}
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition ${
                   activeCityTab === "mumbai"
-                    ? "bg-emerald-600 text-white"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Mumbai Pickups (7+ Stops)
@@ -228,8 +220,8 @@ const Home = () => {
                 onClick={() => setActiveCityTab("pune")}
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition ${
                   activeCityTab === "pune"
-                    ? "bg-emerald-600 text-white"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Pune Pickups (5 Stops)
@@ -239,73 +231,73 @@ const Home = () => {
 
           {activeCityTab === "mumbai" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">09:30 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Borivali (National Park Gate)</p>
-                <span className="text-[11px] text-zinc-500">WEH Main Junction</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">09:30 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Borivali (National Park)</p>
+                <span className="text-[11px] text-slate-500">WEH Main Junction</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">09:45 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Andheri (Gundavali Metro)</p>
-                <span className="text-[11px] text-zinc-500">Western Express Highway</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">09:45 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Andheri (Gundavali Metro)</p>
+                <span className="text-[11px] text-slate-500">Western Express Highway</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">10:00 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Bandra (Kalanagar Junction)</p>
-                <span className="text-[11px] text-zinc-500">Bandra East Highway</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">10:00 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Bandra (Kalanagar)</p>
+                <span className="text-[11px] text-slate-500">Bandra East Junction</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">10:30 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Sion (Chunabhatti)</p>
-                <span className="text-[11px] text-zinc-500">Sion Circle flyover</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">10:30 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Sion (Chunabhatti)</p>
+                <span className="text-[11px] text-slate-500">Sion Circle Highway</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">10:40 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Chembur (Amar Mahal)</p>
-                <span className="text-[11px] text-zinc-500">Eastern Express Highway</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">10:40 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Chembur (Amar Mahal)</p>
+                <span className="text-[11px] text-slate-500">Eastern Express Highway</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">11:00 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Thane / Vashi</p>
-                <span className="text-[11px] text-zinc-500">Teen Hath Naka / Vashi Plaza</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">11:00 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Thane / Vashi</p>
+                <span className="text-[11px] text-slate-500">Teen Hath Naka / Vashi Plaza</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">11:45 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Panvel / Kharghar</p>
-                <span className="text-[11px] text-zinc-500">Kalamboli McDonald's</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">11:45 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Panvel / Kharghar</p>
+                <span className="text-[11px] text-slate-500">Kalamboli McDonald's</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">12:15 AM</span>
-                <p className="text-sm font-semibold text-white mt-1">Kalyan</p>
-                <span className="text-[11px] text-zinc-500">Shivaji Maharaj Chowk</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">12:15 AM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Kalyan</p>
+                <span className="text-[11px] text-slate-500">Shivaji Maharaj Chowk</span>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">11:00 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Ch. Shivaji Nagar</p>
-                <span className="text-[11px] text-zinc-500">Bank of Maharashtra</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">11:00 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Ch. Shivaji Nagar</p>
+                <span className="text-[11px] text-slate-500">Bank of Maharashtra</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">11:15 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Nashik Phata</p>
-                <span className="text-[11px] text-zinc-500">Highway flyover</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">11:15 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Nashik Phata</p>
+                <span className="text-[11px] text-slate-500">Highway flyover</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">11:30 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Bhosari / Wakad</p>
-                <span className="text-[11px] text-zinc-500">Bhosari Pickup / Wakad Bridge</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">11:30 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Bhosari / Wakad</p>
+                <span className="text-[11px] text-slate-500">Bhosari / Wakad Bridge</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">11:45 PM</span>
-                <p className="text-sm font-semibold text-white mt-1">Moshi / Hinjewadi</p>
-                <span className="text-[11px] text-zinc-500">Bharat Mata Chowk / Infosys</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">11:45 PM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Moshi / Hinjewadi</p>
+                <span className="text-[11px] text-slate-500">Bharat Mata Chowk / Infosys</span>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800">
-                <span className="text-emerald-400 text-xs font-bold">12:00 AM</span>
-                <p className="text-sm font-semibold text-white mt-1">Chakan Chowk</p>
-                <span className="text-[11px] text-zinc-500">Highway junction</span>
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-emerald-700 text-xs font-bold">12:00 AM</span>
+                <p className="text-sm font-bold text-slate-900 mt-1">Chakan Chowk</p>
+                <span className="text-[11px] text-slate-500">Highway junction</span>
               </div>
             </div>
           )}
@@ -315,56 +307,56 @@ const Home = () => {
       {/* 5. Booking Process Steps */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center max-w-xl mx-auto mb-12">
-          <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider">
+          <span className="text-emerald-700 text-xs font-bold uppercase tracking-wider">
             Quick 3-Step Booking
           </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
             How to Lock Your Slot
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 relative">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm relative">
             <span className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm mb-4">
               1
             </span>
-            <h3 className="text-base font-bold text-white mb-2">Choose Trek & City</h3>
-            <p className="text-xs text-zinc-400">
+            <h3 className="text-base font-bold text-slate-900 mb-2">Choose Trek & City</h3>
+            <p className="text-xs text-slate-600">
               Select your adventure (Aadrai, Andharban, Devkund, Kalu, Nanemachi) and preferred Mumbai or Pune pickup point.
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 relative">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm relative">
             <span className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm mb-4">
               2
             </span>
-            <h3 className="text-base font-bold text-white mb-2">Pay Advance (₹500 / ₹700)</h3>
-            <p className="text-xs text-zinc-400">
-              Pay via any UPI App (GPay, PhonePe, Paytm) to <span className="text-emerald-400 font-bold">{ROAMING_BIRDS_CONTACTS.upiNumber}</span> ({ROAMING_BIRDS_CONTACTS.upiHolderName}).
+            <h3 className="text-base font-bold text-slate-900 mb-2">Pay Advance (₹500 / ₹700)</h3>
+            <p className="text-xs text-slate-600">
+              Pay via any UPI App to <span className="text-emerald-700 font-bold">{ROAMING_BIRDS_CONTACTS.upiNumber}</span> ({ROAMING_BIRDS_CONTACTS.upiHolderName}).
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-zinc-900 border border-zinc-800 relative">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm relative">
             <span className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-sm mb-4">
               3
             </span>
-            <h3 className="text-base font-bold text-white mb-2">WhatsApp Confirmation</h3>
-            <p className="text-xs text-zinc-400">
-              Send the payment screenshot with Name, Trek Name, & Pickup Stop to <span className="text-emerald-400 font-bold">{ROAMING_BIRDS_CONTACTS.primaryPhone}</span>. You'll be added to the batch WhatsApp group!
+            <h3 className="text-base font-bold text-slate-900 mb-2">WhatsApp Confirmation</h3>
+            <p className="text-xs text-slate-600">
+              Send the payment screenshot with Name, Trek Name, & Pickup Stop to <span className="text-emerald-700 font-bold">{ROAMING_BIRDS_CONTACTS.primaryPhone}</span>. You'll be added to the batch WhatsApp group!
             </p>
           </div>
         </div>
       </section>
 
-      {/* Floating WhatsApp Action Button (Trekkaro style) */}
+      {/* Floating WhatsApp Action Button */}
       <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
         <a
           href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}?text=Hi%20The%20Roaming%20Birds!%20I%20want%20to%20book%20a%20slot%20for%20this%20weekend.`}
           target="_blank"
           rel="noreferrer"
-          className="relative group flex items-center gap-2 p-3.5 sm:px-5 sm:py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full shadow-2xl shadow-emerald-500/50 transition-transform duration-300 hover:scale-105"
+          className="relative group flex items-center gap-2 p-3.5 sm:px-5 sm:py-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold rounded-full shadow-xl shadow-green-600/30 transition-transform duration-300 hover:scale-105"
         >
-          <span className="absolute -inset-1 rounded-full bg-emerald-400 animate-ping opacity-30"></span>
+          <span className="absolute -inset-1 rounded-full bg-[#25D366] animate-ping opacity-25"></span>
           <FaWhatsapp size={24} className="relative z-10" />
           <span className="hidden sm:inline relative z-10 text-sm">
             Chat & Book on WhatsApp
