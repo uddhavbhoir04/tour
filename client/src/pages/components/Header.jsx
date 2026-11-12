@@ -10,11 +10,14 @@ import {
   FaTimes,
   FaSearch
 } from "react-icons/fa";
-import { ROAMING_BIRDS_CONTACTS } from "../../data/roamingBirdsData";
+import { useSettings } from "../../context/SettingsContext";
+import { imageUrl } from "../../utils/imageUrl";
 
 const Header = () => {
   const { currentUser } = useSelector((state) => state.user);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { s } = useSettings();
+  const helpContact = s.contacts?.[0];
   const location = useLocation();
   const activeLink = location.pathname;
 
@@ -35,20 +38,20 @@ const Header = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
               Weekend Batches Open
             </span>
-            <span className="text-slate-300 font-medium">Every Friday & Saturday Night Departure from Mumbai & Pune</span>
+            <span className="text-slate-300 font-medium">{s.announcement}</span>
           </div>
 
           <div className="flex items-center gap-4 text-xs">
             <a
-              href={`tel:${ROAMING_BIRDS_CONTACTS.callNumber1}`}
+              href={`tel:${s.callNumber1}`}
               className="flex items-center gap-1.5 text-slate-300 hover:text-emerald-400 transition"
             >
               <FaPhoneAlt size={11} className="text-emerald-400" />
-              <span>{ROAMING_BIRDS_CONTACTS.primaryPhone}</span>
+              <span>{s.primaryPhone}</span>
             </a>
             <span className="text-slate-700">|</span>
             <a
-              href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}`}
+              href={`https://wa.me/${s.whatsappNumber}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold transition"
@@ -116,7 +119,7 @@ const Header = () => {
             </Link>
 
             <a
-              href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}?text=Hi%20The%20Roaming%20Birds!%20I%20want%20to%20inquire%20about%20upcoming%20monsoon%20treks.`}
+              href={`https://wa.me/${s.whatsappNumber}?text=Hi%20The%20Roaming%20Birds!%20I%20want%20to%20inquire%20about%20upcoming%20monsoon%20treks.`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition shadow-sm hover:shadow-md shadow-emerald-600/30"
@@ -135,7 +138,7 @@ const Header = () => {
                 <img
                   src={
                     currentUser?.avatar
-                      ? `http://localhost:8000/images/${currentUser?.avatar}`
+                      ? imageUrl(currentUser.avatar)
                       : defaultProfileImg
                   }
                   alt="avatar"
@@ -209,7 +212,7 @@ const Header = () => {
 
           <div className="pt-4 border-t border-slate-200 space-y-3">
             <a
-              href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}`}
+              href={`https://wa.me/${s.whatsappNumber}`}
               target="_blank"
               rel="noreferrer"
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700"
@@ -219,12 +222,12 @@ const Header = () => {
             </a>
 
             <div className="flex justify-between items-center text-xs text-slate-500 pt-1">
-              <span>Need help? Call Pratik:</span>
+              <span>Need help? Call {helpContact?.name || "us"}:</span>
               <a
-                href={`tel:${ROAMING_BIRDS_CONTACTS.pratikPhone}`}
+                href={`tel:${helpContact?.phone || s.primaryPhone}`}
                 className="text-emerald-700 font-bold"
               >
-                {ROAMING_BIRDS_CONTACTS.pratikPhone}
+                {helpContact?.phone || s.primaryPhone}
               </a>
             </div>
 

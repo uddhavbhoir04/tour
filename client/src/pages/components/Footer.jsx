@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import {
   FaWhatsapp,
@@ -7,9 +6,12 @@ import {
   FaLeaf
 } from "react-icons/fa";
 import TRB_Logo from "../../assets/images/TRB_Logo.png";
-import { ROAMING_BIRDS_CONTACTS } from "../../data/roamingBirdsData";
+import { useSettings } from "../../context/SettingsContext";
+import { usePackages } from "../../hooks/useApi";
 
 const Footer = () => {
+  const { s } = useSettings();
+  const { packages } = usePackages({ limit: 5, sort: "packageRating" });
   return (
     <footer className="w-full bg-slate-900 border-t border-slate-800 text-slate-300 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -88,31 +90,13 @@ const Footer = () => {
               Popular Trails
             </h3>
             <ul className="space-y-2 text-xs">
-              <li>
-                <Link to="/package/aadrai-jungle-trek" className="hover:text-emerald-400 transition">
-                  Aadrai Jungle Trek
-                </Link>
-              </li>
-              <li>
-                <Link to="/package/andharban-jungle-trek" className="hover:text-emerald-400 transition">
-                  Andharban Dark Forest
-                </Link>
-              </li>
-              <li>
-                <Link to="/package/devkund-waterfall-trek" className="hover:text-emerald-400 transition">
-                  Devkund Secret Waterfall
-                </Link>
-              </li>
-              <li>
-                <Link to="/package/kalu-waterfall-trek" className="hover:text-emerald-400 transition">
-                  Kalu Waterfall 5-Tier View
-                </Link>
-              </li>
-              <li>
-                <Link to="/package/nanemachi-waterfall-trek" className="hover:text-emerald-400 transition">
-                  Nanemachi 400ft Drop
-                </Link>
-              </li>
+              {packages.map((p) => (
+                <li key={p._id}>
+                  <Link to={`/package/${p.slug}`} className="hover:text-emerald-400 transition">
+                    {p.packageName}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -125,33 +109,32 @@ const Footer = () => {
               <div>
                 <span className="text-slate-400 block">WhatsApp Bookings:</span>
                 <a
-                  href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}`}
+                  href={`https://wa.me/${s.whatsappNumber}`}
                   target="_blank"
                   rel="noreferrer"
                   className="font-bold text-emerald-400 hover:underline flex items-center gap-1.5"
                 >
                   <FaWhatsapp size={14} />
-                  {ROAMING_BIRDS_CONTACTS.primaryPhone}
+                  {s.primaryPhone}
                 </a>
               </div>
 
               <div>
                 <span className="text-slate-400 block">Trek Leaders:</span>
-                <span className="text-slate-200 block">
-                  Pratik: <a href="tel:7507670366" className="text-white hover:text-emerald-400">7507670366</a>
-                </span>
-                <span className="text-slate-200 block">
-                  Uddhav: <a href="tel:9922256210" className="text-white hover:text-emerald-400">9922256210</a>
-                </span>
+                {(s.contacts || []).map((c) => (
+                  <span key={c.phone} className="text-slate-200 block">
+                    {c.name}: <a href={`tel:${c.phone}`} className="text-white hover:text-emerald-400">{c.phone}</a>
+                  </span>
+                ))}
               </div>
 
               <div className="pt-2 border-t border-slate-800">
                 <span className="text-slate-400 block">Advance Slot UPI:</span>
                 <span className="font-mono font-bold text-white">
-                  {ROAMING_BIRDS_CONTACTS.upiNumber}
+                  {s.upiNumber}
                 </span>
                 <span className="text-[11px] text-slate-400 block">
-                  ({ROAMING_BIRDS_CONTACTS.upiHolderName})
+                  ({s.upiHolderName})
                 </span>
               </div>
             </div>
@@ -161,7 +144,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <p>
-            © {new Date().getFullYear()} <span className="text-white font-semibold">The Roaming Birds India</span>. All rights reserved.
+            © {new Date().getFullYear()} <span className="text-white font-semibold">{s.brandName}</span>. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-slate-400">
             <span>Mumbai & Pune Weekend Batches</span>

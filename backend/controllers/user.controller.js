@@ -18,6 +18,9 @@ export const updateUser = async (req, res) => {
       phone: req.body.phone,
     };
 
+    // only update fields that were sent (avatar-only uploads must not wipe the profile)
+    Object.keys(updatedFields).forEach((k) => (updatedFields[k] === undefined || updatedFields[k] === "") && delete updatedFields[k]);
+
     // Check if a new avatar was uploaded
     if (req.file) {
       updatedFields.avatar = req.file.filename; // Or `req.file.path` depending on your multer config

@@ -2,7 +2,7 @@ import { Rating } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import RatingCard from "./RatingCard";
-const API = import.meta.env.VITE_API_URL;
+import { API_URL as API, apiFetch } from "../api/client";
 
 const RatingsPage = () => {
   const params = useParams();
@@ -15,10 +15,10 @@ const RatingsPage = () => {
   const getRatings = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await apiFetch(
         `${API}/api/rating/get-ratings/${params.id}/999999999999`
       );
-      const res2 = await fetch(`${API}/api/rating/average-rating/${params.id}`);
+      const res2 = await apiFetch(`/api/rating/average-rating/${params.id}`);
       const data = await res.json();
       const data2 = await res2.json();
       if (data && data2) {

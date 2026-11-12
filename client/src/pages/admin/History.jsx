@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-const API = import.meta.env.VITE_API_URL;
+import { imageUrl } from "../../utils/imageUrl";
+import { API_URL as API, apiFetch } from "../../api/client";
 
 const History = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -14,7 +15,7 @@ const History = () => {
   const getAllBookings = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await apiFetch(
         `${API}/api/booking/get-allBookings?searchTerm=${search}`,
         {
           method: "GET",
@@ -42,7 +43,7 @@ const History = () => {
   const handleHistoryDelete = async (id) => {
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await apiFetch(
         `${API}/api/booking/delete-booking-history/${id}/${currentUser._id}`,
         {
           method: "DELETE",
@@ -91,7 +92,7 @@ const History = () => {
                 <Link to={`/package/${booking?.packageDetails?._id}`}>
                   <img
                     className="w-12 h-12"
-                    src={`http://localhost:8000/images/${booking?.packageDetails?.packageImages[0]}`}
+                    src={imageUrl(booking?.packageDetails?.packageImages[0])}
                     alt="Package Image"
                   />
                 </Link>

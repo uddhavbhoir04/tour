@@ -527,10 +527,3 @@ export const TREK_PACKAGES = [
   }
 ];
 
-export const getTrekByIdOrSlug = (idOrSlug) => {
-  return (
-    TREK_PACKAGES.find(
-      (t) => t._id === idOrSlug || t.slug === idOrSlug
-    ) || null
-  );
-};

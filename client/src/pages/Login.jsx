@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   loginStart,
@@ -8,11 +8,12 @@ import {
 } from "../redux/user/userSlice.js";
 import { useDispatch, useSelector } from "react-redux";
 import loginImage from "../assets/images/login.png";
-const API = import.meta.env.VITE_API_URL;
+import { apiFetch } from "../api/client";
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { loading, error } = useSelector((state) => state.user);
   const [formData, setFormData] = useState({
     email: "",
@@ -29,7 +30,7 @@ const Login = () => {
     e.preventDefault();
     try {
       dispatch(loginStart());
-      const res = await fetch(`${API}/api/auth/login`, {
+      const res = await apiFetch(`/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -40,7 +41,7 @@ const Login = () => {
       if (data?.success) {
         dispatch(loginSuccess(data?.user));
         toast.success(data?.message);
-        navigate("/");
+        navigate(location.state?.from || "/");
       } else {
         dispatch(loginFailure(data?.message));
         toast.error(data?.message);

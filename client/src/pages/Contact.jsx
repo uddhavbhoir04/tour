@@ -1,111 +1,78 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import emailjs from "emailjs-com";
+import { FaWhatsapp, FaPhoneAlt, FaInstagram } from "react-icons/fa";
+import api from "../api/client";
+import { useSettings } from "../context/SettingsContext";
+
+const inputCls = "w-full p-3 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500";
+const empty = { name: "", email: "", phone: "", message: "" };
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    user_name: "",
-    user_email: "",
-    message: "",
-  });
+  const { s } = useSettings();
+  const [form, setForm] = useState(empty);
+  const [status, setStatus] = useState({ loading: false, ok: false, message: "" });
 
-  const [isSent, setIsSent] = useState(false);
-
-  const sendEmail = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    emailjs
-      .send(
-        "service_3auyjg8",
-        "template_a27gbno",
-        formData,
-        "L_UcXDNsGl8NuArep"
-      )
-      .then(
-        () => {
-          setIsSent(true);
-          setFormData({ user_name: "", user_email: "", message: "" });
-        },
-        (error) => {
-          console.error("FAILED...", error);
-        }
-      );
+    setStatus({ loading: true, ok: false, message: "" });
+    try {
+      const { data } = await api.post("/api/contact", form);
+      setStatus({ loading: false, ok: true, message: data.message });
+      setForm(empty);
+    } catch (err) {
+      setStatus({ loading: false, ok: false, message: err.message });
+    }
   };
 
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
   return (
-    <div className="bg-[#EB662B] py-16 px-4 text-white rounded-md">
+    <div className="bg-[#fafbfc] py-16 px-4 min-h-screen">
       <motion.div
-        className="max-w-4xl mx-auto bg-white text-gray-900 rounded-2xl shadow-xl p-8 md:p-12"
-        initial={{ opacity: 0, y: 50 }}
+        className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-6"
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.5 }}
       >
-        <h2 className="text-3xl font-bold mb-6 text-center text-[#EB662B]">
-          Contact Us
-        </h2>
-        <p className="text-center mb-8">
-          We'd love to hear from you! Fill out the form below and we'll get back
-          to you shortly.
-        </p>
-        <form onSubmit={sendEmail} className="space-y-6">
-          <div>
-            <label className="block mb-2 text-sm font-medium">Your Name</label>
-            <input
-              type="text"
-              name="user_name"
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6358DC]"
-              placeholder="Enter your name"
-              value={formData.user_name}
-              onChange={(e) =>
-                setFormData({ ...formData, user_name: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <label className="block mb-2 text-sm font-medium">Your Email</label>
-            <input
-              type="email"
-              name="user_email"
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6358DC]"
-              placeholder="Enter your email"
-              value={formData.user_email}
-              onChange={(e) =>
-                setFormData({ ...formData, user_email: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <label className="block mb-2 text-sm font-medium">
-              Your Message
-            </label>
-            <textarea
-              name="message"
-              rows="5"
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6358DC]"
-              placeholder="Enter your message"
-              value={formData.message}
-              onChange={(e) =>
-                setFormData({ ...formData, message: e.target.value })
-              }
-            ></textarea>
-          </div>
-          <div className="text-center">
-            <motion.button
+        <div className="md:col-span-2 bg-slate-900 text-slate-200 rounded-2xl p-8 space-y-5">
+          <h2 className="text-2xl font-extrabold text-white">Get in touch</h2>
+          <p className="text-sm text-slate-400">Questions about a trek, group bookings or custom batches? We usually reply within a few hours.</p>
+          {s.whatsappNumber && (
+            <a href={`https://wa.me/${s.whatsappNumber}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm hover:text-emerald-400">
+              <FaWhatsapp className="text-emerald-400" size={18} /> WhatsApp {s.primaryPhone}
+            </a>
+          )}
+          {(s.contacts || []).map((c) => (
+            <a key={c.phone} href={`tel:${c.phone}`} className="flex items-center gap-3 text-sm hover:text-emerald-400">
+              <FaPhoneAlt className="text-emerald-400" size={14} /> {c.name}: {c.phone}
+            </a>
+          ))}
+          {s.instagram && (
+            <a href={s.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-sm hover:text-emerald-400">
+              <FaInstagram className="text-emerald-400" size={18} /> Instagram
+            </a>
+          )}
+        </div>
+
+        <div className="md:col-span-3 bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Send us a message</h2>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input required placeholder="Your name" value={form.name} onChange={set("name")} className={inputCls} />
+              <input required type="email" placeholder="Your email" value={form.email} onChange={set("email")} className={inputCls} />
+            </div>
+            <input type="tel" placeholder="Phone (optional)" value={form.phone} onChange={set("phone")} className={inputCls} />
+            <textarea required rows="5" maxLength={5000} placeholder="Your message" value={form.message} onChange={set("message")} className={inputCls} />
+            <button
               type="submit"
-              whileTap={{ scale: 0.95 }}
-              className="bg-[#EB662B] text-white font-semibold px-6 py-3 rounded-lg  transition"
+              disabled={status.loading}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition"
             >
-              Send Message
-            </motion.button>
-            {isSent && (
-              <p className="text-green-600 font-medium mt-3">
-                Message sent successfully!
-              </p>
-            )}
-          </div>
-        </form>
+              {status.loading ? "Sending..." : "Send Message"}
+            </button>
+            {status.message && <p className={`text-sm font-medium ${status.ok ? "text-emerald-700" : "text-red-600"}`}>{status.message}</p>}
+          </form>
+        </div>
       </motion.div>
     </div>
   );

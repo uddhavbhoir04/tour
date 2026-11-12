@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
@@ -15,56 +15,47 @@ import {
   FaSuitcaseRolling,
   FaExclamationTriangle
 } from "react-icons/fa";
-import { getTrekByIdOrSlug, TREK_PACKAGES, ROAMING_BIRDS_CONTACTS } from "../data/roamingBirdsData";
+import { useApi } from "../hooks/useApi";
+import { useSettings } from "../context/SettingsContext";
+import { imageUrl } from "../utils/imageUrl";
+import { ErrorState } from "./components/StateViews";
+import Spinner from "./components/Spinner";
 import BookingModal from "./components/BookingModal";
 
-const API = import.meta.env.VITE_API_URL;
+const Stat = ({ label, value, accent }) =>
+  value ? (
+    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
+      <span className="text-xs text-slate-500 block mb-1">{label}</span>
+      <span className={`text-sm font-bold line-clamp-1 ${accent ? "text-emerald-700" : "text-slate-900"}`}>{value}</span>
+    </div>
+  ) : null;
 
 const Package = () => {
   const { id } = useParams();
+  const { s } = useSettings();
   const [activeTab, setActiveTab] = useState("itinerary");
   const [showBookingModal, setShowBookingModal] = useState(false);
-
-  const [trek, setTrek] = useState(() => {
-    return getTrekByIdOrSlug(id) || TREK_PACKAGES[0];
+  const { data: trek, loading, error, reload } = useApi(`/api/package/get-package-data/${encodeURIComponent(id)}`, {
+    select: (d) => d.packageData,
   });
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-
-    const foundLocal = getTrekByIdOrSlug(id);
-    if (foundLocal) {
-      setTrek(foundLocal);
-      return;
-    }
-
-    const fetchPackage = async () => {
-      try {
-        if (API) {
-          const res = await fetch(`${API}/api/package/get-package-data/${id}`);
-          const data = await res.json();
-          if (data?.success && data?.packageData) {
-            setTrek({
-              ...TREK_PACKAGES[0],
-              ...data.packageData,
-              _id: data.packageData._id,
-              packageName: data.packageData.packageName,
-              packageImages: data.packageData.packageImages?.length
-                ? data.packageData.packageImages
-                : TREK_PACKAGES[0].packageImages,
-            });
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchPackage();
   }, [id]);
 
-  const mumbaiPrice = trek.mumbaiPrice || trek.packagePrice || 1400;
-  const punePrice = trek.punePrice || trek.packageDiscountPrice || 1300;
-  const advance = trek.advanceAmount || 500;
+  if (loading) return <Spinner />;
+  if (error || !trek)
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4">
+        <ErrorState message={error || "Trek not found"} onRetry={error ? reload : undefined} />
+        <Link to="/search" className="text-sm font-bold text-emerald-700">Browse all treks &rarr;</Link>
+      </div>
+    );
+
+  const basePrice = trek.packageOffer ? trek.packageDiscountPrice : trek.packagePrice;
+  const mumbaiPrice = trek.mumbaiPrice || basePrice;
+  const punePrice = trek.punePrice || basePrice;
+  const advance = trek.advanceAmount || 0;
 
   return (
     <div className="w-full bg-[#fafbfc] text-slate-800 min-h-screen -mt-20 pt-24 pb-20">
@@ -82,15 +73,15 @@ const Package = () => {
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-              {trek.badge || "Monsoon Trek"}
+              {trek.badge || trek.region}
             </span>
             <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-              Grade: {trek.difficulty || "Moderate"}
+              Grade: {trek.difficulty || "—"}
             </span>
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white text-xs font-bold text-slate-800 border border-slate-200 shadow-xs">
               <FaStar className="text-amber-500" size={12} />
-              <span>{trek.packageRating || 4.9}</span>
-              <span className="text-slate-400 font-normal">({trek.packageTotalRatings || 180} reviews)</span>
+              <span>{trek.packageRating || "New"}</span>
+              <Link to={`/package/ratings/${trek._id}`} className="text-slate-400 font-normal hover:text-emerald-700">({trek.packageTotalRatings || 0} reviews)</Link>
             </div>
           </div>
 
@@ -103,7 +94,7 @@ const Package = () => {
             <span>
               {trek.baseVillage ? `Base Village: ${trek.baseVillage} • ` : ""}
               {trek.region ? `Region: ${trek.region} • ` : ""}
-              {trek.packageDestination || "Maharashtra"}
+              {trek.packageDestination}
             </span>
           </p>
         </div>
@@ -120,7 +111,7 @@ const Package = () => {
             {(trek.packageImages || []).map((imgUrl, idx) => (
               <SwiperSlide key={idx}>
                 <img
-                  src={imgUrl}
+                  src={imageUrl(imgUrl)}
                   alt={`${trek.packageName} - Slide ${idx + 1}`}
                   className="w-full h-full object-cover"
                 />
@@ -134,42 +125,12 @@ const Package = () => {
 
         {/* Trek Stats Summary Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">Trail Type</span>
-            <span className="text-sm font-bold text-slate-900 line-clamp-1">
-              {trek.trailType || "Jungle Trail"}
-            </span>
-          </div>
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">Difficulty</span>
-            <span className="text-sm font-bold text-emerald-700">
-              {trek.difficulty || "Easy to Moderate"}
-            </span>
-          </div>
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">Endurance</span>
-            <span className="text-sm font-bold text-slate-900">
-              {trek.endurance || "Medium / Average"}
-            </span>
-          </div>
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">Trek Distance</span>
-            <span className="text-sm font-bold text-slate-900">
-              {trek.trailLength || "7 km (One side)"}
-            </span>
-          </div>
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">Duration</span>
-            <span className="text-sm font-bold text-slate-900">
-              {trek.duration || "3 hrs (One side)"}
-            </span>
-          </div>
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">Best Season</span>
-            <span className="text-sm font-bold text-slate-900">
-              {trek.bestTime || "June to October"}
-            </span>
-          </div>
+          <Stat label="Trail Type" value={trek.trailType} />
+          <Stat label="Difficulty" value={trek.difficulty} accent />
+          <Stat label="Endurance" value={trek.endurance} />
+          <Stat label="Trek Distance" value={trek.trailLength} />
+          <Stat label="Duration" value={trek.duration || `${trek.packageDays}D / ${trek.packageNights}N`} />
+          <Stat label="Best Season" value={trek.bestTime} />
         </div>
 
         {/* Main Content Layout */}
@@ -417,7 +378,7 @@ const Package = () => {
               {/* Batch schedule */}
               <div className="text-xs text-slate-600 flex items-center gap-2 border-t border-slate-100 pt-4">
                 <FaCalendarAlt className="text-emerald-600" />
-                <span className="font-medium">{trek.batchSchedule || "Every Saturday Night Departure"}</span>
+                <span className="font-medium">{trek.batchSchedule}</span>
               </div>
 
               {/* Instant Slot Confirmation CTA */}
@@ -431,7 +392,7 @@ const Package = () => {
 
               {/* Quick WhatsApp Inquiry */}
               <a
-                href={`https://wa.me/${ROAMING_BIRDS_CONTACTS.whatsappNumber}?text=Hi%20The%20Roaming%20Birds!%20I%20want%20to%20book%20a%20slot%20for%20${encodeURIComponent(trek.packageName)}`}
+                href={`https://wa.me/${s.whatsappNumber}?text=Hi!%20I%20want%20to%20book%20a%20slot%20for%20${encodeURIComponent(trek.packageName)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-3 rounded-xl font-bold text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center gap-2 transition"
@@ -442,22 +403,18 @@ const Package = () => {
 
               {/* Direct Call Contacts */}
               <div className="border-t border-slate-100 pt-4 text-xs text-slate-600 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>Pratik:</span>
-                  <a href={`tel:${ROAMING_BIRDS_CONTACTS.pratikPhone}`} className="text-slate-900 font-bold hover:text-emerald-700">
-                    {ROAMING_BIRDS_CONTACTS.pratikPhone}
-                  </a>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Uddhav:</span>
-                  <a href={`tel:${ROAMING_BIRDS_CONTACTS.uddhavPhone}`} className="text-slate-900 font-bold hover:text-emerald-700">
-                    {ROAMING_BIRDS_CONTACTS.uddhavPhone}
-                  </a>
-                </div>
+                {(s.contacts || []).map((c) => (
+                  <div key={c.phone} className="flex justify-between items-center">
+                    <span>{c.name}:</span>
+                    <a href={`tel:${c.phone}`} className="text-slate-900 font-bold hover:text-emerald-700">
+                      {c.phone}
+                    </a>
+                  </div>
+                ))}
                 <div className="flex justify-between items-center pt-1 border-t border-slate-100">
                   <span>UPI ID:</span>
                   <span className="text-emerald-700 font-mono font-bold">
-                    {ROAMING_BIRDS_CONTACTS.upiNumber} ({ROAMING_BIRDS_CONTACTS.upiHolderName})
+                    {s.upiNumber} ({s.upiHolderName})
                   </span>
                 </div>
               </div>

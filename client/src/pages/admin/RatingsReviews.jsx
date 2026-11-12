@@ -1,7 +1,8 @@
 import { Rating } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-const API = import.meta.env.VITE_API_URL;
+import { API_URL as API, apiFetch } from "../../api/client";
+import { imageUrl } from "../../utils/imageUrl";
 
 const RatingsReviews = () => {
   const [packages, setPackages] = useState([]);
@@ -16,9 +17,9 @@ const RatingsReviews = () => {
       setLoading(true);
       let url =
         filter === "most" //most rated
-          ? `${API}/api/package/get-packages?searchTerm=${search}&sort=packageTotalRatings`
-          : `${API}/api/package/get-packages?searchTerm=${search}&sort=packageRating`; //all
-      const res = await fetch(url);
+          ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=packageTotalRatings`
+          : `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=packageRating`; //all
+      const res = await apiFetch(url);
       const data = await res.json();
       if (data?.success) {
         setPackages(data?.packages);
@@ -46,9 +47,9 @@ const RatingsReviews = () => {
     const startIndex = numberOfPackages;
     let url =
       filter === "most" //most rated
-        ? `${API}/api/package/get-packages?searchTerm=${search}&sort=packageTotalRatings&startIndex=${startIndex}`
-        : `${API}/api/package/get-packages?searchTerm=${search}&sort=packageRating&startIndex=${startIndex}`; //all
-    const res = await fetch(url);
+        ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=packageTotalRatings&startIndex=${startIndex}`
+        : `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=packageRating&startIndex=${startIndex}`; //all
+    const res = await apiFetch(url);
     const data = await res.json();
     if (data?.packages?.length < 9) {
       setShowMoreBtn(false);
@@ -111,7 +112,7 @@ const RatingsReviews = () => {
               >
                 <Link to={`/package/ratings/${pack._id}`}>
                   <img
-                    src={`http://localhost:8000/images/${pack?.packageImages[0]}`}
+                    src={imageUrl(pack?.packageImages[0])}
                     alt="image"
                     className="w-20 h-20 rounded"
                   />

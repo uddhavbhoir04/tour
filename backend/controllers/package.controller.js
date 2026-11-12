@@ -1,277 +1,182 @@
-import Package from "../models/package.model.js";
-import braintree from "braintree";
-import dotenv from "dotenv";
-import Booking from "../models/booking.model.js";
-dotenv.config();
+import Package, { slugify } from "../models/package.model.js";
+import { buildPackageFilter, findPackageByIdOrSlug, priceField } from "../services/packageQuery.js";
+import { cacheGet, cacheSet, cacheDelPrefix } from "../services/redis.js";
+import { indexPackage, removeSource, reindexInBackground } from "../services/ai/rag.js";
 
-//create package
-export const createPackage = async (req, res) => {
+const ARRAY_FIELDS = ["inclusions", "exclusions", "whatToCarry", "importantRules", "mumbaiPickups", "punePickups", "itinerary", "categories", "packageImages"];
+const NUMBER_FIELDS = ["packageDays", "packageNights", "packagePrice", "packageDiscountPrice", "mumbaiPrice", "punePrice", "advanceAmount"];
+const STRING_FIELDS = [
+  "packageName", "slug", "badge", "tagline", "packageDescription", "packageDestination", "baseVillage", "region",
+  "trailType", "difficulty", "endurance", "trailLength", "duration", "bestTime", "batchSchedule",
+  "packageAccommodation", "packageTransportation", "packageMeals", "packageActivities",
+];
+
+/** Normalise a (possibly multipart) body: arrays arrive as JSON strings, numbers/booleans as strings. */
+const parseBody = (body = {}) => {
+  const out = {};
+  for (const f of STRING_FIELDS) if (body[f] !== undefined) out[f] = String(body[f]).trim();
+  for (const f of NUMBER_FIELDS) if (body[f] !== undefined && body[f] !== "") out[f] = Number(body[f]);
+  for (const f of ARRAY_FIELDS) {
+    if (body[f] === undefined) continue;
+    let v = body[f];
+    if (typeof v === "string") {
+      try {
+        v = JSON.parse(v);
+      } catch {
+        v = v.split("\n").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    out[f] = Array.isArray(v) ? v : [v];
+  }
+  if (body.packageOffer !== undefined) out.packageOffer = body.packageOffer === true || body.packageOffer === "true";
+  if (body.isActive !== undefined) out.isActive = body.isActive === true || body.isActive === "true";
+  if (out.slug) out.slug = slugify(out.slug);
+  return out;
+};
+
+const validate = (d, { partial = false } = {}) => {
+  const required = ["packageName", "packageDescription", "packageDestination", "packageAccommodation", "packageTransportation", "packageMeals", "packageActivities", "packagePrice", "packageDiscountPrice"];
+  if (!partial) {
+    const missing = required.filter((f) => d[f] === undefined || d[f] === "");
+    if (missing.length) return `Missing fields: ${missing.join(", ")}`;
+  }
+  if (d.packagePrice !== undefined && d.packagePrice <= 0) return "Price should be greater than 0!";
+  if (d.packagePrice !== undefined && d.packageDiscountPrice !== undefined && d.packagePrice < d.packageDiscountPrice)
+    return "Regular price should be greater than discount price!";
+  if (!partial && !(d.packageDays > 0) && !(d.packageNights > 0)) return "Provide days and nights!";
+  return null;
+};
+
+const invalidate = () => cacheDelPrefix("pkg:");
+
+export const createPackage = async (req, res, next) => {
   try {
-    const {
-      packageName,
-      packageDescription,
-      packageDestination,
-      packageDays,
-      packageNights,
-      packageAccommodation,
-      packageTransportation,
-      packageMeals,
-      packageActivities,
-      packagePrice,
-      packageDiscountPrice,
-      packageOffer,
-    } = req.body;
+    const data = parseBody(req.body);
+    const uploaded = (req.files || []).map((f) => f.filename);
+    data.packageImages = [...(data.packageImages || []), ...uploaded];
+    data.packageDays ??= 0;
+    data.packageNights ??= 0;
+    data.packageOffer ??= false;
 
-    const imageFilenames = req.files.map((file) => file.filename);
+    const error = validate(data);
+    if (error) return res.status(400).send({ success: false, message: error });
 
-    if (
-      !packageName ||
-      !packageDescription ||
-      !packageDestination ||
-      !packageAccommodation ||
-      !packageTransportation ||
-      !packageMeals ||
-      !packageActivities ||
-      !packageOffer === ""
-    ) {
-      return res.status(200).send({
-        success: false,
-        message: "All fields are required!",
-      });
-    }
-    if (packagePrice < packageDiscountPrice) {
-      return res.status(200).send({
-        success: false,
-        message: "Regular price should be greater than discount price!",
-      });
-    }
-    if (packagePrice <= 0 || packageDiscountPrice < 0) {
-      return res.status(200).send({
-        success: false,
-        message: "Price should be greater than 0!",
-      });
-    }
-    if (packageDays <= 0 && packageNights <= 0) {
-      return res.status(200).send({
-        success: false,
-        message: "Provide days and nights!",
-      });
-    }
+    data.slug = data.slug || slugify(data.packageName);
+    if (await Package.exists({ slug: data.slug })) data.slug = `${data.slug}-${Date.now().toString(36)}`;
 
-    const newPackage = await Package.create({
-      packageName,
-      packageDescription,
-      packageDestination,
-      packageDays,
-      packageNights,
-      packageAccommodation,
-      packageTransportation,
-      packageMeals,
-      packageActivities,
-      packagePrice,
-      packageDiscountPrice,
-      packageOffer,
-      packageImages: imageFilenames,
-    });
-    if (newPackage) {
-      return res.status(201).send({
-        success: true,
-        message: "Package created successfully",
-      });
-    } else {
-      return res.status(500).send({
-        success: false,
-        message: "Soemthing went wrong",
-      });
-    }
+    const newPackage = await Package.create(data);
+    await invalidate();
+    reindexInBackground(() => indexPackage(newPackage));
+    return res.status(201).send({ success: true, message: `${data.packageName} created successfully`, package: newPackage });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//get all packages
-export const getPackages = async (req, res) => {
+export const getPackages = async (req, res, next) => {
   try {
-    const searchTerm = req.query.searchTerm || "";
-    const limit = parseInt(req.query.limit) || 9;
+    const adminView = req.isAdmin && req.query.admin === "1";
+    const cacheKey = `pkg:list:${adminView ? "admin:" : ""}${JSON.stringify(req.query)}`;
+    const cached = await cacheGet(cacheKey);
+    if (cached) return res.status(200).send(cached);
+
+    const limit = Math.min(parseInt(req.query.limit) || 9, 100);
     const startIndex = parseInt(req.query.startIndex) || 0;
+    const allowedSort = ["createdAt", "packageRating", "packageTotalRatings", "packageDiscountPrice", "packagePrice", "mumbaiPrice", "punePrice", "packageName"];
+    const sort = req.query.sort === "price" ? priceField(req.query.city) : allowedSort.includes(req.query.sort) ? req.query.sort : "createdAt";
+    const order = req.query.order === "asc" ? 1 : -1;
 
-    let offer = req.query.offer;
-    if (offer === undefined || offer === "false") {
-      offer = { $in: [false, true] };
-    }
-
-    const sort = req.query.sort || "createdAt";
-
-    const order = req.query.order || "desc";
-
-    const packages = await Package.find({
-      $or: [
-        { packageName: { $regex: searchTerm, $options: "i" } },
-        { packageDestination: { $regex: searchTerm, $options: "i" } },
-      ],
-      packageOffer: offer,
-    })
-      .sort({ [sort]: order })
-      .limit(limit)
-      .skip(startIndex);
-    if (packages) {
-      return res.status(200).send({
-        success: true,
-        packages,
-      });
-    } else {
-      return res.status(500).send({
-        success: false,
-        message: "No Packages yet",
-      });
-    }
+    const filter = buildPackageFilter(req.query);
+    if (adminView) delete filter.isActive;
+    const [packages, total] = await Promise.all([
+      Package.find(filter).sort({ [sort]: order, _id: 1 }).skip(startIndex).limit(limit).lean(),
+      Package.countDocuments(filter),
+    ]);
+    const payload = { success: true, packages, total };
+    await cacheSet(cacheKey, payload);
+    return res.status(200).send(payload);
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//get package data
-export const getPackageData = async (req, res) => {
+// distinct values for the Search page filter controls
+export const getPackageFilters = async (req, res, next) => {
   try {
-    const packageData = await Package.findById(req?.params?.id);
-    if (!packageData) {
-      return res.status(404).send({
-        success: false,
-        message: "Package not found!",
-      });
-    }
-    return res.status(200).send({
+    const cached = await cacheGet("pkg:filters");
+    if (cached) return res.status(200).send(cached);
+    const active = { isActive: { $ne: false } };
+    const [regions, difficulties, categories, [range]] = await Promise.all([
+      Package.distinct("region", active),
+      Package.distinct("difficulty", active),
+      Package.distinct("categories", active),
+      Package.aggregate([
+        { $match: active },
+        { $project: { prices: { $filter: { input: ["$mumbaiPrice", "$punePrice", "$packageDiscountPrice"], cond: { $gt: ["$$this", 0] } } } } },
+        { $unwind: "$prices" },
+        { $group: { _id: null, min: { $min: "$prices" }, max: { $max: "$prices" } } },
+      ]),
+    ]);
+    const payload = {
       success: true,
-      packageData,
-    });
+      regions: regions.filter(Boolean).sort(),
+      difficulties: difficulties.filter(Boolean).sort(),
+      categories: categories.filter(Boolean),
+      minPrice: range?.min ?? 0,
+      maxPrice: range?.max ?? 0,
+    };
+    await cacheSet("pkg:filters", payload);
+    return res.status(200).send(payload);
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//update package
-// export const updatePackage = async (req, res) => {
-//   try {
-//     const findPackage = await Package.findById(req.params.id);
-//     if (!findPackage)
-//       return res.status(404).send({
-//         success: false,
-//         message: "Package not found!",
-//       });
-//     const image_filename = `${req.file.filename}`;
-//     const updatedPackage = await Package.findByIdAndUpdate(
-//       req.params.id,
-//       req.body,
-
-//       { new: true }
-//     );
-//     res.status(200).send({
-//       success: true,
-//       message: "Package updated successfully!",
-//       updatedPackage,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
-
-export const updatePackage = async (req, res) => {
+export const getPackageData = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const {
-      packageName,
-      packageDescription,
-      packageDestination,
-      packageDays,
-      packageNights,
-      packageAccommodation,
-      packageTransportation,
-      packageMeals,
-      packageActivities,
-      packagePrice,
-      packageDiscountPrice,
-      packageOffer,
-    } = req.body;
-
-    const imageFilenames = req.files
-      ? req.files.map((file) => file.filename)
-      : [];
-
-    const packageToUpdate = await Package.findById(id);
-
-    if (!packageToUpdate) {
-      return res
-        .status(404)
-        .send({ success: false, message: "Package not found" });
-    }
-
-    // Update fields
-    packageToUpdate.packageName = packageName || packageToUpdate.packageName;
-    packageToUpdate.packageDescription =
-      packageDescription || packageToUpdate.packageDescription;
-    packageToUpdate.packageDestination =
-      packageDestination || packageToUpdate.packageDestination;
-    packageToUpdate.packageDays = packageDays || packageToUpdate.packageDays;
-    packageToUpdate.packageNights =
-      packageNights || packageToUpdate.packageNights;
-    packageToUpdate.packageAccommodation =
-      packageAccommodation || packageToUpdate.packageAccommodation;
-    packageToUpdate.packageTransportation =
-      packageTransportation || packageToUpdate.packageTransportation;
-    packageToUpdate.packageMeals = packageMeals || packageToUpdate.packageMeals;
-    packageToUpdate.packageActivities =
-      packageActivities || packageToUpdate.packageActivities;
-    packageToUpdate.packagePrice = packagePrice || packageToUpdate.packagePrice;
-    packageToUpdate.packageDiscountPrice =
-      packageDiscountPrice || packageToUpdate.packageDiscountPrice;
-    packageToUpdate.packageOffer = packageOffer || packageToUpdate.packageOffer;
-
-    // Only update images if new ones are uploaded
-    if (imageFilenames.length > 0) {
-      packageToUpdate.packageImages = imageFilenames;
-    }
-
-    await packageToUpdate.save();
-
-    res.status(200).send({
-      success: true,
-      message: "Package updated successfully",
-    });
+    const packageData = await findPackageByIdOrSlug(req.params.id, { includeInactive: Boolean(req.isAdmin) && req.query.admin === "1" });
+    if (!packageData) return res.status(404).send({ success: false, message: "Package not found!" });
+    return res.status(200).send({ success: true, packageData });
   } catch (error) {
-    console.log("Update error:", error);
-    res.status(500).send({
-      success: false,
-      message: "Error updating package",
-    });
+    next(error);
   }
 };
 
-//delete package
-export const deletePackage = async (req, res) => {
+export const updatePackage = async (req, res, next) => {
   try {
-    const deletePackage = await Package.findByIdAndDelete(req?.params?.id);
-    return res.status(200).send({
-      success: true,
-      message: "Package Deleted!",
-    });
+    const pkg = await Package.findById(req.params.id);
+    if (!pkg) return res.status(404).send({ success: false, message: "Package not found" });
+
+    const data = parseBody(req.body);
+    const error = validate({ ...pkg.toObject(), ...data }, { partial: true });
+    if (error) return res.status(400).send({ success: false, message: error });
+
+    // new uploads are appended to the kept images (client sends the kept list as packageImages)
+    const uploaded = (req.files || []).map((f) => f.filename);
+    if (uploaded.length || data.packageImages) data.packageImages = [...(data.packageImages ?? pkg.packageImages), ...uploaded];
+
+    if (data.slug && data.slug !== pkg.slug && (await Package.exists({ slug: data.slug, _id: { $ne: pkg._id } }))) {
+      return res.status(400).send({ success: false, message: "Slug already in use" });
+    }
+
+    pkg.set(data);
+    await pkg.save();
+    await invalidate();
+    reindexInBackground(() => indexPackage(pkg));
+    return res.status(200).send({ success: true, message: "Package updated successfully", package: pkg });
   } catch (error) {
-    cnsole.log(error);
+    next(error);
   }
 };
 
-//payment gateway api
-//token
-// export const braintreeTokenController = async (req, res) => {
-//   try {
-//     gateway.clientToken.generate({}, function (err, response) {
-//       if (err) {
-//         res.status(500).send(err);
-//       } else {
-//         res.send(response);
-//       }
-//     });
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
+export const deletePackage = async (req, res, next) => {
+  try {
+    const deleted = await Package.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).send({ success: false, message: "Package not found" });
+    await invalidate();
+    reindexInBackground(() => removeSource("package", String(deleted._id)));
+    return res.status(200).send({ success: true, message: "Package Deleted!" });
+  } catch (error) {
+    next(error);
+  }
+};

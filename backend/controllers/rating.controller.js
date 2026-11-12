@@ -1,5 +1,6 @@
 import Package from "../models/package.model.js";
 import RatingReview from "../models/ratings_reviews.model.js";
+import { cacheDelPrefix } from "../services/redis.js";
 
 export const giveRating = async (req, res) => {
   if (req.user.id !== req.body.userRef) {
@@ -9,7 +10,14 @@ export const giveRating = async (req, res) => {
     });
   }
   try {
-    const newRating = await RatingReview.create(req.body);
+    const stars = Number(req.body.rating);
+    if (!(stars >= 1 && stars <= 5)) {
+      return res.status(400).send({ success: false, message: "Rating must be between 1 and 5" });
+    }
+    if (await RatingReview.exists({ packageId: req.body.packageId, userRef: req.user.id })) {
+      return res.status(400).send({ success: false, message: "You have already reviewed this trek" });
+    }
+    const newRating = await RatingReview.create({ ...req.body, rating: stars });
     if (newRating) {
       const ratings = await RatingReview.find({
         packageId: req.body.packageId,
@@ -40,6 +48,7 @@ export const giveRating = async (req, res) => {
       // console.log(setPackageRatings);
 
       if (setPackageRatings) {
+        await cacheDelPrefix("pkg:");
         return res.status(201).send({
           success: true,
           message: "Thanks for your feedback!",

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -8,22 +8,22 @@ import {
   FaArrowRight
 } from "react-icons/fa";
 import BookingModal from "./BookingModal";
+import { packageImage } from "../../utils/imageUrl";
 
 const SingleCard = ({ packageData }) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
 
   if (!packageData) return null;
 
-  const pkgId = packageData._id || packageData.slug || "aadrai-jungle-trek";
-  const displayImage =
-    packageData.packageImages?.[0] ||
-    "https://images.unsplash.com/photo-1511497584788-87676104235f?q=80&w=800&auto=format&fit=crop";
-
-  const rating = packageData.packageRating || 4.9;
-  const reviewsCount = packageData.packageTotalRatings || 140;
-  const mumbaiPrice = packageData.mumbaiPrice || packageData.packagePrice || 1400;
-  const punePrice = packageData.punePrice || packageData.packageDiscountPrice || 1300;
-  const advance = packageData.advanceAmount || 500;
+  const pkgId = packageData.slug || packageData._id;
+  const displayImage = packageImage(packageData);
+  const rating = packageData.packageRating || 0;
+  const reviewsCount = packageData.packageTotalRatings || 0;
+  const basePrice = packageData.packageOffer ? packageData.packageDiscountPrice : packageData.packagePrice;
+  const mumbaiPrice = packageData.mumbaiPrice || basePrice;
+  const punePrice = packageData.punePrice || basePrice;
+  const fromPrice = Math.min(mumbaiPrice, punePrice);
+  const advance = packageData.advanceAmount;
 
   return (
     <>
@@ -41,36 +41,42 @@ const SingleCard = ({ packageData }) => {
             to={`/package/${pkgId}`}
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
+            {displayImage ? (
             <img
               src={displayImage}
               alt={packageData.packageName}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
             />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-200" />
+            )}
           </Link>
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-60" />
 
           {/* Top Left Badge */}
           <div className="absolute top-3 left-3">
             <span className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg bg-white/95 backdrop-blur-sm text-emerald-800 shadow-sm border border-slate-100">
-              {packageData.badge || packageData.difficulty || "Monsoon Trek"}
+              {packageData.badge || packageData.difficulty || packageData.region}
             </span>
           </div>
 
           {/* Top Right Rating Badge */}
+          {rating > 0 && (
           <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-bold flex items-center gap-1 shadow-sm border border-slate-100">
             <FaStar className="text-amber-500" size={11} />
             <span>{rating}</span>
             <span className="text-slate-400 text-[10px]">({reviewsCount})</span>
           </div>
+          )}
 
           {/* Departure Ticker Pill at Image Bottom */}
           <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-xs text-white bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20">
             <span className="flex items-center gap-1.5 font-medium truncate">
               <FaBus size={11} className="text-emerald-400" />
-              {packageData.batchSchedule || "Every Weekend Departures"}
+              {packageData.batchSchedule || packageData.bestTime}
             </span>
-            <span className="text-[11px] font-bold text-emerald-300 shrink-0">1D / 1N</span>
+            <span className="text-[11px] font-bold text-emerald-300 shrink-0">{packageData.packageDays}D / {packageData.packageNights}N</span>
           </div>
         </div>
 
@@ -82,7 +88,7 @@ const SingleCard = ({ packageData }) => {
               <FaMapMarkerAlt className="text-emerald-600 shrink-0" size={12} />
               <span className="truncate">
                 {packageData.baseVillage ? `Base: ${packageData.baseVillage} • ` : ""}
-                {packageData.packageDestination || "Maharashtra"}
+                {packageData.packageDestination}
               </span>
             </div>
 
@@ -108,9 +114,11 @@ const SingleCard = ({ packageData }) => {
                   {packageData.trailLength}
                 </span>
               )}
-              <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-medium border border-emerald-200">
-                Unlimited Meals + AC Bus
-              </span>
+              {packageData.packageOffer && packageData.packagePrice > packageData.packageDiscountPrice && (
+                <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-medium border border-emerald-200">
+                  Offer: save ₹{packageData.packagePrice - packageData.packageDiscountPrice}
+                </span>
+              )}
             </div>
           </div>
 
@@ -120,15 +128,17 @@ const SingleCard = ({ packageData }) => {
               <div>
                 <span className="text-[11px] text-slate-500 block">Starting from</span>
                 <div className="text-xl font-extrabold text-slate-900 flex items-baseline gap-1">
-                  <span className="text-emerald-700">₹{punePrice}</span>
+                  <span className="text-emerald-700">₹{fromPrice}</span>
                   <span className="text-xs text-slate-500 font-normal">/person</span>
                 </div>
               </div>
 
               <div className="text-right">
-                <span className="inline-block text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-md">
-                  Lock seat @ ₹{advance}/-
-                </span>
+                {advance > 0 && (
+                  <span className="inline-block text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-md">
+                    Lock seat @ ₹{advance}/-
+                  </span>
+                )}
                 <span className="block text-[11px] text-slate-500 mt-0.5">
                   Mumbai ₹{mumbaiPrice} | Pune ₹{punePrice}
                 </span>

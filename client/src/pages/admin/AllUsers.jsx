@@ -1,8 +1,7 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { toast } from "react-toastify";
-const API = import.meta.env.VITE_API_URL;
+import { API_URL as API, apiFetch } from "../../api/client";
 
 const AllUsers = () => {
   const [allUser, setAllUsers] = useState([]);
@@ -13,7 +12,7 @@ const AllUsers = () => {
   const getUsers = async () => {
     try {
       setLoading(true);
-       const res = await fetch(
+       const res = await apiFetch(
       `${API}/api/user/getAllUsers?searchTerm=${search}`,
         {
           method: "GET",
@@ -46,7 +45,7 @@ const AllUsers = () => {
     if (CONFIRM) {
       setLoading(true);
       try {
-      const res = await fetch(`${API}/api/user/delete-user/${userId}`, {
+      const res = await apiFetch(`${API}/api/user/delete-user/${userId}`, {
         method: "DELETE",
         credentials: "include", // ✅ Add this
       });

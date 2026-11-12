@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   updateUserStart,
@@ -9,12 +10,12 @@ import {
   updatePassFailure,
 } from "../../redux/user/userSlice";
 import { toast } from "react-toastify";
-import axios from "axios";
 import { FiUpload } from "react-icons/fi";
-const API = import.meta.env.VITE_API_URL;
+import api, { API_URL as API, apiFetch } from "../../api/client";
 
 
 const AdminUpdateProfile = () => {
+  const navigate = useNavigate();
   const { currentUser, loading, error } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const [updateProfileDetailsPanel, setUpdateProfileDetailsPanel] =
@@ -92,7 +93,7 @@ const AdminUpdateProfile = () => {
         updatedForm.append("avatar", avatarFile);
       }
 
-      const res = await axios.post(
+      const res = await api.post(
         `${API}/api/user/update/${currentUser._id}`,
         updatedForm
       );
@@ -127,7 +128,7 @@ const AdminUpdateProfile = () => {
     }
     try {
       dispatch(updatePassStart());
-      const res = await fetch(`${API}/api/user/update-password/${currentUser._id}`, {
+      const res = await apiFetch(`${API}/api/user/update-password/${currentUser._id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

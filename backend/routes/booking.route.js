@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express from "express";
 import {
   bookPackage,
   cancelBooking,
@@ -7,38 +7,25 @@ import {
   getAllUserBookings,
   getCurrentBookings,
   getUserCurrentBookings,
+  submitUpiRef,
+  updateBookingPayment,
 } from "../controllers/booking.controller.js";
 import { isAdmin, requireSignIn } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// book package
 router.post("/book-package/:packageId", requireSignIn, bookPackage);
 
-//get all current bookings admin
+// admin
 router.get("/get-currentBookings", requireSignIn, isAdmin, getCurrentBookings);
-
-//get all bookings admin
 router.get("/get-allBookings", requireSignIn, isAdmin, getAllBookings);
+router.patch("/:id/payment", requireSignIn, isAdmin, updateBookingPayment);
 
-//get all current bookings by user id
-router.get(
-  "/get-UserCurrentBookings/:id",
-  requireSignIn,
-  getUserCurrentBookings
-);
-
-//get all bookings by user id
-router.get("/get-allUserBookings/:id", requireSignIn, getAllUserBookings);
-
-//delete history of booking
-router.delete(
-  "/delete-booking-history/:id/:userId",
-  requireSignIn,
-  deleteBookingHistory
-);
-
-//cancle booking by id
-router.post("/cancel-booking/:id/:userId", requireSignIn, cancelBooking);
+// user (":id" segments are ignored — always the signed-in user)
+router.get("/get-UserCurrentBookings/:id?", requireSignIn, getUserCurrentBookings);
+router.get("/get-allUserBookings/:id?", requireSignIn, getAllUserBookings);
+router.patch("/:id/upi-ref", requireSignIn, submitUpiRef);
+router.delete("/delete-booking-history/:id/:userId?", requireSignIn, deleteBookingHistory);
+router.post("/cancel-booking/:id/:userId?", requireSignIn, cancelBooking);
 
 export default router;

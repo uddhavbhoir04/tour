@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import loginImage from "../assets/images/login.png";
 import { toast } from "react-toastify";
-const API = import.meta.env.VITE_API_URL;
+import api from "../api/client";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -60,7 +59,7 @@ const Signup = () => {
       return;
     }
     try {
-      const res = await axios.post(`${API}/api/auth/signup`, formData);
+      const res = await api.post(`/api/auth/signup`, formData);
       if (res?.data?.success) {
         toast.success(res?.data?.message);
         navigate("/login");

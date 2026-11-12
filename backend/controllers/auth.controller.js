@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { signToken, AUTH_COOKIE, authCookieOptions } from "../middlewares/authMiddleware.js";
 
 //test controller
 export const test = (req, res) => {
@@ -78,15 +78,10 @@ export const loginController = async (req, res) => {
       });
     }
 
-    const token = await jwt.sign({ id: validUser._id }, "bfuiwrht7895t5uith", {
-      expiresIn: "4d",
-    });
+    const token = signToken(validUser._id);
     const { password: pass, ...rest } = validUser._doc; //deselcting password to send user(this will send all data accept password)
     res
-      .cookie("X_TTMS_access_token", token, {
-        httpOnly: true,
-        maxAge: 4 * 24 * 60 * 60 * 1000,
-      })
+      .cookie(AUTH_COOKIE, token, authCookieOptions)
       .status(200)
       .send({
         success: true,
@@ -100,7 +95,7 @@ export const loginController = async (req, res) => {
 
 export const logOutController = (req, res) => {
   try {
-    res.clearCookie("X_TTMS_access_token");
+    res.clearCookie(AUTH_COOKIE, { ...authCookieOptions, maxAge: undefined });
     res.status(200).send({
       success: true,
       message: "Logged out successfully",

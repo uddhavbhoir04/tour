@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useSettings } from "../../context/SettingsContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,28 +12,29 @@ import {
   FaMountain
 } from "react-icons/fa";
 
-const DYNAMIC_WORDS = ["Routine", "Noise", "Concrete Jungle", "Stress", "Ordinary"];
 
 const HeroImage = () => {
   const navigate = useNavigate();
+  const { s } = useSettings();
+  const words = s.heroWords?.length ? s.heroWords : ["Routine"];
   const [wordIndex, setWordIndex] = useState(0);
   const [searchLocation, setSearchLocation] = useState("");
   const [selectedCity, setSelectedCity] = useState("Mumbai");
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setWordIndex((prev) => (prev + 1) % DYNAMIC_WORDS.length);
+      setWordIndex((prev) => (prev + 1) % words.length);
     }, 2800);
     return () => clearInterval(interval);
-  }, []);
+  }, [words.length]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    navigate(`/search?searchTerm=${encodeURIComponent(searchLocation)}`);
+    navigate(`/search?searchTerm=${encodeURIComponent(searchLocation)}&city=${selectedCity}`);
   };
 
   return (
-    <div className="relative w-full -mt-20 pt-24 pb-16 md:pb-24 overflow-hidden bg-gradient-to-b from-slate-100/80 via-emerald-50/30 to-[#fafbfc]">
+    <div className="relative w-full -mt-20 sm:-mt-28 pt-32 sm:pt-40 md:pt-44 pb-16 md:pb-24 overflow-hidden bg-gradient-to-b from-slate-100/80 via-emerald-50/30 to-[#fafbfc]">
       {/* Background Hero Banner with Soft Ambient Curves */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-emerald-200/30 blur-3xl" />
@@ -49,7 +51,7 @@ const HeroImage = () => {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs sm:text-sm font-bold mb-6 shadow-sm"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
-            🧗🏻 The Roaming Birds Presents • Monsoon Weekend Batches
+            🧗🏻 {s.brandName} Presents • {s.announcement}
           </motion.div>
 
           {/* Main Hero Headline */}
@@ -59,7 +61,7 @@ const HeroImage = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 max-w-5xl leading-tight"
           >
-            Wander Far, Discover More.
+            {(s.tagline || "").split("•")[0].trim()}
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-3">
               <span>Break The</span>
               <div className="inline-block relative min-w-[180px] sm:min-w-[280px] text-emerald-600 underline decoration-emerald-400 decoration-wavy">
@@ -72,7 +74,7 @@ const HeroImage = () => {
                     transition={{ duration: 0.3 }}
                     className="inline-block"
                   >
-                    {DYNAMIC_WORDS[wordIndex]}
+                    {words[wordIndex % words.length]}
                   </motion.span>
                 </AnimatePresence>
               </div>
@@ -151,8 +153,8 @@ const HeroImage = () => {
                 <FaStar />
               </div>
               <div className="text-left">
-                <span className="font-extrabold text-slate-900 text-base">4.9 / 5</span>
-                <span className="text-slate-500 block text-[11px]">950+ Google Reviews</span>
+                <span className="font-extrabold text-slate-900 text-base">{s.googleReviewsRating} / 5</span>
+                <span className="text-slate-500 block text-[11px]">{s.reviewsCount} Google Reviews</span>
               </div>
             </div>
 
@@ -163,7 +165,7 @@ const HeroImage = () => {
                 <FaUsers />
               </div>
               <div className="text-left">
-                <span className="font-extrabold text-slate-900 text-base">12,000+</span>
+                <span className="font-extrabold text-slate-900 text-base">{s.trekkersCount}</span>
                 <span className="text-slate-500 block text-[11px]">Happy Trekkers</span>
               </div>
             </div>
@@ -175,8 +177,8 @@ const HeroImage = () => {
                 <FaShieldAlt />
               </div>
               <div className="text-left">
-                <span className="font-extrabold text-slate-900 text-base">100% Certified</span>
-                <span className="text-slate-500 block text-[11px]">Safe for Female & Solo Travelers</span>
+                <span className="font-extrabold text-slate-900 text-base">{s.trustBadges?.[0]?.title}</span>
+                <span className="text-slate-500 block text-[11px]">{s.trustBadges?.[0]?.subtitle}</span>
               </div>
             </div>
           </motion.div>

@@ -17,6 +17,8 @@ import MyBookings from "./user/MyBookings";
 import UpdateProfile from "./user/UpdateProfile";
 import MyHistory from "./user/MyHistory";
 import { toast } from "react-toastify";
+import { apiFetch } from "../api/client";
+import { imageUrl } from "../utils/imageUrl";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ const Profile = () => {
   const handleLogout = async () => {
     try {
       dispatch(logOutStart());
-      const res = await fetch(`${API}/api/auth/logout`);
+      const res = await apiFetch(`/api/auth/logout`);
       const data = await res.json();
       if (data?.success !== true) {
         dispatch(logOutFailure(data?.message));
@@ -69,7 +71,7 @@ const Profile = () => {
     if (CONFIRM) {
       try {
         dispatch(deleteUserAccountStart());
-        const res = await fetch(`${API}/api/user/delete/${currentUser._id}`, {
+        const res = await apiFetch(`/api/user/delete/${currentUser._id}`, {
           method: "DELETE",
         });
         const data = await res.json();
@@ -96,7 +98,7 @@ const Profile = () => {
                 <img
                   src={
                     currentUser.avatar
-                      ? `http://localhost:8000/images/${currentUser.avatar}`
+                      ? imageUrl(currentUser.avatar)
                       : "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTueIx2Jkawe7r91I50VfVAZLS60yx8RjiSfQ&s"
                   }
                   alt="Profile photo"

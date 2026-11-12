@@ -1,278 +1,180 @@
-import Booking from "../models/booking.model.js";
+import mongoose from "mongoose";
+import Booking, { PAYMENT_STATUSES, BOOKING_STATUSES } from "../models/booking.model.js";
 import Package from "../models/package.model.js";
-import { ObjectId } from "mongodb";
+import User from "../models/user.model.js";
+import SiteSettings from "../models/siteSettings.model.js";
+import { sendBookingCreated, sendBookingConfirmed } from "../services/email.js";
 
-//book package
-export const bookPackage = async (req, res) => {
+const ACTIVE_STATUSES = ["Pending", "Confirmed", "Booked"];
+const today = () => new Date().toISOString().slice(0, 10);
+const rx = (s = "") => ({ $regex: s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" });
+
+const isAdminUser = async (userId) => (await User.findById(userId).select("user_role"))?.user_role === 1;
+
+// ---------------- create ----------------
+export const bookPackage = async (req, res, next) => {
   try {
-    const { packageDetails, buyer, totalPrice, persons, date } = req.body;
+    const packageId = req.params.packageId || req.body.packageDetails;
+    const { persons, date, city = "Mumbai", pickupPoint, fullName, phone, email, notes } = req.body;
 
-    if (req.user.id !== buyer) {
-      return res.status(401).send({
-        success: false,
-        message: "You can only buy on your account!",
-      });
+    const count = Number(persons);
+    if (!packageId || !count || count < 1 || !date || !fullName || !phone) {
+      return res.status(400).send({ success: false, message: "Name, phone, date and number of persons are required!" });
     }
-
-    if (!packageDetails || !buyer || !totalPrice || !persons || !date) {
-      return res.status(200).send({
-        success: false,
-        message: "All fields are required!",
-      });
+    if (count > 20) return res.status(400).send({ success: false, message: "For groups over 20 please contact us directly." });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < today()) {
+      return res.status(400).send({ success: false, message: "Please pick a valid upcoming date." });
     }
+    if (!["Mumbai", "Pune"].includes(city)) return res.status(400).send({ success: false, message: "City must be Mumbai or Pune" });
+    if (!mongoose.isValidObjectId(packageId)) return res.status(404).send({ success: false, message: "Package Not Found!" });
 
-    const validPackage = await Package.findById(packageDetails);
+    const pkg = await Package.findOne({ _id: packageId, isActive: { $ne: false } });
+    if (!pkg) return res.status(404).send({ success: false, message: "Package Not Found!" });
 
-    if (!validPackage) {
-      return res.status(404).send({
-        success: false,
-        message: "Package Not Found!",
-      });
-    }
+    const user = await User.findById(req.user.id).select("email username");
+    const pricePerPerson = pkg.priceFor(city);
 
-    const newBooking = await Booking.create(req.body);
+    // price is always computed server-side
+    const booking = await Booking.create({
+      packageDetails: pkg._id,
+      buyer: req.user.id,
+      fullName,
+      phone,
+      email: email || user?.email,
+      city,
+      pickupPoint,
+      persons: count,
+      pricePerPerson,
+      totalPrice: pricePerPerson * count,
+      advanceAmount: (pkg.advanceAmount || 0) * count,
+      date,
+      notes,
+    });
 
-    if (newBooking) {
-      return res.status(201).send({
-        success: true,
-        message: "Package Booked!",
-      });
-    } else {
-      return res.status(500).send({
-        success: false,
-        message: "Something went wrong!",
-      });
-    }
+    const settings = await SiteSettings.findOne({ key: "main" }).lean();
+    sendBookingCreated(booking, pkg, settings);
+
+    return res.status(201).send({ success: true, message: "Booking created! Pay the advance to confirm your slot.", booking });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//get current bookings for admin
-export const getCurrentBookings = async (req, res) => {
+// ---------------- admin lists ----------------
+const adminList = (filter) => async (req, res, next) => {
   try {
-    const searchTerm = req?.query?.searchTerm || "";
-    const bookings = await Booking.find({
-      date: { $gt: new Date().toISOString() },
-      status: "Booked",
-    })
+    const searchTerm = req.query.searchTerm || "";
+    const query = { ...filter() };
+    if (req.query.paymentStatus) query.paymentStatus = req.query.paymentStatus;
+    const bookings = await Booking.find(query)
       .populate("packageDetails")
-      // .populate("buyer", "username email")
-      .populate({
-        path: "buyer",
-        match: {
-          $or: [
-            { username: { $regex: searchTerm, $options: "i" } },
-            { email: { $regex: searchTerm, $options: "i" } },
-          ],
-        },
-      })
-      .sort({ createdAt: "asc" });
-    let bookingsFilterd = [];
-    bookings.map((booking) => {
-      if (booking.buyer !== null) {
-        bookingsFilterd.push(booking);
-      }
-    });
-    if (bookingsFilterd.length) {
-      return res.status(200).send({
-        success: true,
-        bookings: bookingsFilterd,
-      });
-    } else {
-      return res.status(200).send({
-        success: false,
-        message: "No Bookings Available",
-      });
-    }
+      .populate({ path: "buyer", select: "username email phone avatar", match: { $or: [{ username: rx(searchTerm) }, { email: rx(searchTerm) }] } })
+      .sort({ date: 1, createdAt: 1 });
+    const filtered = bookings.filter((b) => b.buyer !== null);
+    return res.status(200).send({ success: true, bookings: filtered });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//get all bookings admin
-export const getAllBookings = async (req, res) => {
-  try {
-    const searchTerm = req?.query?.searchTerm || "";
-    const bookings = await Booking.find({})
-      .populate("packageDetails")
-      // .populate("buyer", "username email")
-      .populate({
-        path: "buyer",
-        match: {
-          $or: [
-            { username: { $regex: searchTerm, $options: "i" } },
-            { email: { $regex: searchTerm, $options: "i" } },
-          ],
-        },
-      })
-      .sort({ createdAt: "asc" });
-    let bookingsFilterd = [];
-    bookings.map((booking) => {
-      if (booking.buyer !== null) {
-        bookingsFilterd.push(booking);
-      }
-    });
-    if (bookingsFilterd.length) {
-      return res.status(200).send({
-        success: true,
-        bookings: bookingsFilterd,
-      });
-    } else {
-      return res.status(200).send({
-        success: false,
-        message: "No Bookings Available",
-      });
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
+export const getCurrentBookings = adminList(() => ({ date: { $gte: today() }, status: { $in: ACTIVE_STATUSES } }));
+export const getAllBookings = adminList(() => ({}));
 
-//get current bookings for user by id
-export const getUserCurrentBookings = async (req, res) => {
+// ---------------- user lists ----------------
+const userList = (filter) => async (req, res, next) => {
   try {
-    if (req?.user?.id !== req?.params?.id) {
-      return res.status(401).send({
-        success: false,
-        message: "You can only get your own bookings!!",
-      });
-    }
-    const searchTerm = req?.query?.searchTerm || "";
-    const bookings = await Booking.find({
-      buyer: new ObjectId(req?.params?.id),
-      date: { $gt: new Date().toISOString() },
-      status: "Booked",
-    })
-      // .populate("packageDetails")
-      .populate({
-        path: "packageDetails",
-        match: {
-          packageName: { $regex: searchTerm, $options: "i" },
-        },
-      })
+    const searchTerm = req.query.searchTerm || "";
+    const bookings = await Booking.find({ buyer: req.user.id, ...filter() })
+      .populate({ path: "packageDetails", match: { packageName: rx(searchTerm) } })
       .populate("buyer", "username email")
-      .sort({ createdAt: "asc" });
-    let bookingsFilterd = [];
-    bookings.map((booking) => {
-      if (booking.packageDetails !== null) {
-        bookingsFilterd.push(booking);
-      }
-    });
-    if (bookingsFilterd.length) {
-      return res.status(200).send({
-        success: true,
-        bookings: bookingsFilterd,
-      });
-    } else {
-      return res.status(200).send({
-        success: false,
-        message: "No Bookings Available",
-      });
-    }
+      .sort({ date: -1 });
+    return res.status(200).send({ success: true, bookings: bookings.filter((b) => b.packageDetails !== null) });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//get all bookings by user id
-export const getAllUserBookings = async (req, res) => {
+// :id param kept for backwards compatibility; always scoped to the signed-in user
+export const getUserCurrentBookings = userList(() => ({ date: { $gte: today() }, status: { $in: ACTIVE_STATUSES } }));
+export const getAllUserBookings = userList(() => ({}));
+
+// ---------------- mutations ----------------
+const loadOwnedBooking = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(404).send({ success: false, message: "Booking not found" });
+    return null;
+  }
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) {
+    res.status(404).send({ success: false, message: "Booking not found" });
+    return null;
+  }
+  if (String(booking.buyer) !== req.user.id && !(await isAdminUser(req.user.id))) {
+    res.status(401).send({ success: false, message: "You can only manage your own bookings!" });
+    return null;
+  }
+  return booking;
+};
+
+export const deleteBookingHistory = async (req, res, next) => {
   try {
-    if (req?.user?.id !== req?.params?.id) {
-      return res.status(401).send({
-        success: false,
-        message: "You can only get your own bookings!!",
-      });
-    }
-    const searchTerm = req?.query?.searchTerm || "";
-    const bookings = await Booking.find({
-      buyer: new ObjectId(req?.params?.id),
-    })
-      // .populate("packageDetails")
-      .populate({
-        path: "packageDetails",
-        match: {
-          packageName: { $regex: searchTerm, $options: "i" },
-        },
-      })
-      .populate("buyer", "username email")
-      .sort({ createdAt: "asc" });
-    let bookingsFilterd = [];
-    bookings.map((booking) => {
-      if (booking.packageDetails !== null) {
-        bookingsFilterd.push(booking);
-      }
-    });
-    if (bookingsFilterd.length) {
-      return res.status(200).send({
-        success: true,
-        bookings: bookingsFilterd,
-      });
-    } else {
-      return res.status(200).send({
-        success: false,
-        message: "No Bookings Available",
-      });
-    }
+    const booking = await loadOwnedBooking(req, res);
+    if (!booking) return;
+    await booking.deleteOne();
+    return res.status(200).send({ success: true, message: "Booking History Deleted!" });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//delete booking history
-export const deleteBookingHistory = async (req, res) => {
+export const cancelBooking = async (req, res, next) => {
   try {
-    if (req?.user?.id !== req?.params?.userId) {
-      return res.status(401).send({
-        success: false,
-        message: "You can only delete your booking history!",
-      });
-    }
-    const deleteHistory = await Booking.findByIdAndDelete(req?.params?.id);
-    if (deleteHistory) {
-      return res.status(200).send({
-        success: true,
-        message: "Booking History Deleted!",
-      });
-    } else {
-      return res.status(500).send({
-        success: false,
-        message: "Something went wrong while deleting booking history!",
-      });
-    }
+    const booking = await loadOwnedBooking(req, res);
+    if (!booking) return;
+    if (booking.status === "Cancelled") return res.status(400).send({ success: false, message: "Booking already cancelled" });
+    booking.status = "Cancelled";
+    await booking.save();
+    return res.status(200).send({ success: true, message: "Booking Cancelled!", booking });
   } catch (error) {
-    console.log(error);
+    next(error);
   }
 };
 
-//cancel booking
-export const cancelBooking = async (req, res) => {
+// user submits UPI transaction reference after paying
+export const submitUpiRef = async (req, res, next) => {
   try {
-    if (req.user.id !== req?.params?.userId) {
-      return res.status(401).send({
-        success: false,
-        message: "You can only cancel your bookings!",
-      });
-    }
-    const cancBooking = await Booking.findByIdAndUpdate(
-      req?.params?.id,
-      {
-        status: "Cancelled",
-      },
-      { new: true }
-    );
-    if (cancBooking) {
-      return res.status(200).send({
-        success: true,
-        message: "Booking Cancelled!",
-      });
-    } else {
-      return res.status(500).send({
-        success: false,
-        message: "Something went wrong while cancelling booking!",
-      });
-    }
+    const booking = await loadOwnedBooking(req, res);
+    if (!booking) return;
+    const ref = String(req.body.upiTxnRef || "").trim();
+    if (!/^[A-Za-z0-9-]{6,40}$/.test(ref)) return res.status(400).send({ success: false, message: "Enter a valid UPI transaction / UTR reference" });
+    booking.upiTxnRef = ref;
+    await booking.save();
+    return res.status(200).send({ success: true, message: "Payment reference submitted. We'll verify and confirm shortly.", booking });
   } catch (error) {
-    console.log(error);
+    next(error);
+  }
+};
+
+// admin: update payment / booking status
+export const updateBookingPayment = async (req, res, next) => {
+  try {
+    const { paymentStatus, status } = req.body;
+    if (paymentStatus && !PAYMENT_STATUSES.includes(paymentStatus)) return res.status(400).send({ success: false, message: "Invalid payment status" });
+    if (status && !BOOKING_STATUSES.includes(status)) return res.status(400).send({ success: false, message: "Invalid booking status" });
+
+    const booking = await Booking.findById(req.params.id).populate("packageDetails");
+    if (!booking) return res.status(404).send({ success: false, message: "Booking not found" });
+
+    const wasConfirmed = booking.status === "Confirmed";
+    if (paymentStatus) booking.paymentStatus = paymentStatus;
+    if (status) booking.status = status;
+    // marking advance/full payment confirms a pending booking
+    else if (["AdvancePaid", "Paid"].includes(paymentStatus) && ["Pending", "Booked"].includes(booking.status)) booking.status = "Confirmed";
+    await booking.save();
+
+    if (!wasConfirmed && booking.status === "Confirmed") sendBookingConfirmed(booking, booking.packageDetails);
+    return res.status(200).send({ success: true, message: "Booking updated", booking });
+  } catch (error) {
+    next(error);
   }
 };

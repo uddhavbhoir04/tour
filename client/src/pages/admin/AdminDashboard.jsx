@@ -1,4 +1,45 @@
-// Skip imports for brevity; assume React, Redux, router, toast, Firebase storage functions are imported
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import {
+  updateUserSuccess,
+  logOutStart,
+  logOutSuccess,
+  logOutFailure,
+  deleteUserAccountStart,
+  deleteUserAccountSuccess,
+  deleteUserAccountFailure,
+} from "../../redux/user/userSlice";
+import api, { apiFetch } from "../../api/client";
+import { imageUrl } from "../../utils/imageUrl";
+import Overview from "./Overview";
+import AllBookings from "./AllBookings";
+import AddPackages from "./AddPackages";
+import AllPackages from "./AllPackages";
+import AllUsers from "./AllUsers";
+import Payments from "./Payments";
+import RatingsReviews from "./RatingsReviews";
+import History from "./History";
+import AdminUpdateProfile from "./AdminUpdateProfile";
+import SiteSettings from "./SiteSettings";
+import BlogAdmin from "./BlogAdmin";
+import Messages from "./Messages";
+
+const PANELS = [
+  { id: 0, label: "Overview", Component: Overview },
+  { id: 1, label: "Bookings", Component: AllBookings },
+  { id: 5, label: "Payments", Component: Payments },
+  { id: 2, label: "Add Package", Component: AddPackages },
+  { id: 3, label: "All Packages", Component: AllPackages },
+  { id: 4, label: "Users", Component: AllUsers },
+  { id: 6, label: "Ratings/Reviews", Component: RatingsReviews },
+  { id: 7, label: "History", Component: History },
+  { id: 9, label: "Site Settings", Component: SiteSettings },
+  { id: 10, label: "Blog", Component: BlogAdmin },
+  { id: 11, label: "Messages", Component: Messages },
+  { id: 8, label: "Edit Profile", Component: AdminUpdateProfile },
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -8,7 +49,7 @@ const AdminDashboard = () => {
 
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [photoPercentage, setPhotoPercentage] = useState(0);
-  const [activePanelId, setActivePanelId] = useState(1);
+  const [activePanelId, setActivePanelId] = useState(0);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -30,26 +71,24 @@ const AdminDashboard = () => {
     }
   }, [currentUser]);
 
-  // --- Firebase Profile Upload ---
-  const handleFileUpload = (file) => {
+  // --- Avatar upload (stored by the backend in /uploads) ---
+  const handleFileUpload = async (file) => {
     if (!file) return;
-
-    const storageRef = ref(storage, `profilePhotos/${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setPhotoPercentage(progress);
-      },
-      (error) => console.error("Upload failed:", error),
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          setProfilePhoto(downloadURL);
-        });
-      }
-    );
+    const data = new FormData();
+    data.append("avatar", file);
+    try {
+      setPhotoPercentage(1);
+      const res = await api.post(`/api/user/update/${currentUser._id}`, data, {
+        onUploadProgress: (e) => e.total && setPhotoPercentage((e.loaded / e.total) * 100),
+      });
+      dispatch(updateUserSuccess(res.data.user));
+      setProfilePhoto(res.data.user.avatar);
+      toast.success("Profile photo updated");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPhotoPercentage(0);
+    }
   };
 
   const handleProfileFileChange = (e) => {
@@ -61,7 +100,7 @@ const AdminDashboard = () => {
   const handleLogout = async () => {
     try {
       dispatch(logOutStart());
-      const res = await fetch(`${API}/api/auth/logout`);
+      const res = await apiFetch("/api/auth/logout");
       const data = await res.json();
       if (!data?.success) {
         dispatch(logOutFailure(data?.message));
@@ -82,7 +121,7 @@ const AdminDashboard = () => {
 
     try {
       dispatch(deleteUserAccountStart());
-      const res = await fetch(`${API}/api/user/delete/${currentUser._id}`, {
+      const res = await apiFetch(`/api/user/delete/${currentUser._id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -107,13 +146,14 @@ const AdminDashboard = () => {
             <div className="flex flex-col items-center gap-4 p-3 rounded-lg shadow-lg">
               <div className="w-full flex flex-col items-center relative">
                 <img
-                  src={profilePhoto || `http://localhost:8000/images/${formData.avatar}`}
+                  src={imageUrl(profilePhoto || formData.avatar)}
                   alt="Profile"
                   className="w-36 h-36 object-cover rounded-full"
                 />
                 <input
                   type="file"
                   ref={fileRef}
+                  accept="image/*"
                   onChange={handleProfileFileChange}
                   className="mt-2"
                 />
@@ -164,22 +204,13 @@ const AdminDashboard = () => {
           </div>
 
           {/* Main Panel */}
-          <div className="w-[65%] max-sm:w-full">
-            <nav className="w-full border-b-4 border-[#EB662B] py-3 overflow-x-auto flex gap-2">
-              {[
-                { id: 1, label: "Bookings" },
-                { id: 2, label: "Add Packages" },
-                { id: 3, label: "All Packages" },
-                { id: 4, label: "Users" },
-                { id: 5, label: "Payments" },
-                { id: 6, label: "Ratings/Reviews" },
-                { id: 7, label: "History" },
-                { id: 8, label: "Edit Profile" },
-              ].map((panel) => (
+          <div className="flex-1 min-w-0 max-sm:w-full">
+            <nav className="w-full border-b-4 border-emerald-600 py-3 overflow-x-auto flex gap-2">
+              {PANELS.map((panel) => (
                 <button
                   key={panel.id}
-                  className={`p-1 rounded-t transition-all duration-300 ${
-                    activePanelId === panel.id ? "bg-[#EB662B] text-white" : ""
+                  className={`px-2 py-1 whitespace-nowrap text-sm font-semibold rounded-t transition-all duration-300 ${
+                    activePanelId === panel.id ? "bg-emerald-600 text-white" : "text-slate-600"
                   }`}
                   onClick={() => setActivePanelId(panel.id)}
                 >
@@ -188,15 +219,10 @@ const AdminDashboard = () => {
               ))}
             </nav>
 
-            <div className="content-div flex flex-wrap my-5">
-              {activePanelId === 1 && <AllBookings />}
-              {activePanelId === 2 && <AddPackages />}
-              {activePanelId === 3 && <AllPackages />}
-              {activePanelId === 4 && <AllUsers />}
-              {activePanelId === 5 && <Payments />}
-              {activePanelId === 6 && <RatingsReviews />}
-              {activePanelId === 7 && <History />}
-              {activePanelId === 8 && <AdminUpdateProfile />}
+            <div className="content-div flex flex-wrap my-5 w-full">
+              {PANELS.filter((p) => p.id === activePanelId).map(({ id, Component }) => (
+                <Component key={id} />
+              ))}
             </div>
           </div>
         </>

@@ -1,9 +1,10 @@
 import { Rating } from "@mui/material";
 import React from "react";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { imageUrl } from "../utils/imageUrl";
+import defaultProfileImg from "../assets/images/profile.png";
 
 const RatingCard = ({ packageRatings }) => {
-  console.log(packageRatings);
   return (
     <>
       {packageRatings &&
@@ -17,7 +18,7 @@ const RatingCard = ({ packageRatings }) => {
               <div className="flex gap-2 items-center">
                 <img
                   src={
-                    `http://localhost:8000/images/${rating.userProfileImg}` ||
+                    imageUrl(rating.userProfileImg) ||
                     defaultProfileImg
                   }
                   alt={rating.username[0]}
@@ -76,7 +77,7 @@ const RatingCard = ({ packageRatings }) => {
                   >
                     <div className="flex gap-2 items-center">
                       <img
-                        src={rating.userProfileImg || defaultProfileImg}
+                        src={imageUrl(rating.userProfileImg) || defaultProfileImg}
                         alt={rating.username[0]}
                         className="border w-6 h-6 border-black rounded-[50%]"
                       />

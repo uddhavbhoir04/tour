@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+# env files
+.env.*
+!.env-sample
+client/.env.development
+client/.env.production

@@ -1,11 +1,5 @@
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
-import Package from "./models/package.model.js";
-
-const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL;
-
-const ROAMING_BIRDS_TREKS = [
+// Base package fields (description, meals, transport…) from the original seed
+export const BASE_TREKS = [
   {
     packageName: "Aadrai Jungle Trek with Kalu Waterfall Viewpoint",
     packageDescription:
@@ -115,33 +109,3 @@ const ROAMING_BIRDS_TREKS = [
   },
 ];
 
-async function seed() {
-  if (!MONGO_URI) {
-    console.error("MONGO_URI not found in .env");
-    process.exit(1);
-  }
-
-  try {
-    await mongoose.connect(MONGO_URI);
-    console.log("Connected to MongoDB");
-
-    for (const trek of ROAMING_BIRDS_TREKS) {
-      const existing = await Package.findOne({ packageName: trek.packageName });
-      if (existing) {
-        console.log(`Updating ${trek.packageName}`);
-        await Package.updateOne({ _id: existing._id }, trek);
-      } else {
-        console.log(`Creating ${trek.packageName}`);
-        await Package.create(trek);
-      }
-    }
-
-    console.log("Seeding complete!");
-    process.exit(0);
-  } catch (err) {
-    console.error("Seeding error:", err);
-    process.exit(1);
-  }
-}
-
-seed();

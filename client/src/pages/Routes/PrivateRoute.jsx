@@ -1,30 +1,27 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom";
 import Spinner from "../components/Spinner";
-const API = import.meta.env.VITE_API_URL;
+import { apiFetch } from "../../api/client";
 
 export default function PrivateRoute() {
   const { currentUser } = useSelector((state) => state.user);
-  const [ok, setOk] = useState(false);
-
-  const authCheck = async () => {
-    const res = await fetch(`${API}/api/user/user-auth`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (data.check) setOk(true);
-    else setOk(false);
-  };
+  const location = useLocation();
+  const [status, setStatus] = useState("checking"); // checking | ok | denied
 
   useEffect(() => {
-    if (currentUser !== null) authCheck();
+    if (!currentUser) return setStatus("denied");
+    let cancelled = false;
+    apiFetch("/api/user/user-auth")
+      .then((res) => res.json())
+      .then((data) => !cancelled && setStatus(data?.check ? "ok" : "denied"))
+      .catch(() => !cancelled && setStatus("denied"));
+    return () => {
+      cancelled = true;
+    };
   }, [currentUser]);
 
-  return ok ? <Outlet /> : <Spinner />;
+  if (status === "checking") return <Spinner />;
+  if (status === "denied") return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return <Outlet />;
 }

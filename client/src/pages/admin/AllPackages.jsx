@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-const API = import.meta.env.VITE_API_URL;
+import { imageUrl } from "../../utils/imageUrl";
+import { API_URL as API, apiFetch } from "../../api/client";
 
 const AllPackages = () => {
   const [packages, setPackages] = useState([]);
@@ -16,13 +17,13 @@ const AllPackages = () => {
       setLoading(true);
       let url =
         filter === "offer" //offer
-          ? `${API}/api/package/get-packages?searchTerm=${search}&offer=true`
+          ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&offer=true`
           : filter === "latest" //latest
-          ? `${API}/api/package/get-packages?searchTerm=${search}&sort=createdAt`
+          ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=createdAt`
           : filter === "top" //top rated
-          ? `${API}/api/package/get-packages?searchTerm=${search}&sort=packageRating`
-          : `${API}/api/package/get-packages?searchTerm=${search}`; //all
-      const res = await fetch(url);
+          ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=packageRating`
+          : `${API}/api/package/get-packages?admin=1&searchTerm=${search}`; //all
+      const res = await apiFetch(url);
       const data = await res.json();
       if (data?.success) {
         setPackages(data?.packages);
@@ -46,13 +47,13 @@ const AllPackages = () => {
     const startIndex = numberOfPackages;
     let url =
       filter === "offer" //offer
-        ? `${API}/api/package/get-packages?searchTerm=${search}&offer=true&startIndex=${startIndex}`
+        ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&offer=true&startIndex=${startIndex}`
         : filter === "latest" //latest
-        ? `${API}/api/package/get-packages?searchTerm=${search}&sort=createdAt&startIndex=${startIndex}`
+        ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=createdAt&startIndex=${startIndex}`
         : filter === "top" //top rated
-        ? `${API}/api/package/get-packages?searchTerm=${search}&sort=packageRating&startIndex=${startIndex}`
-        : `${API}/api/package/get-packages?searchTerm=${search}&startIndex=${startIndex}`; //all
-    const res = await fetch(url);
+        ? `${API}/api/package/get-packages?admin=1&searchTerm=${search}&sort=packageRating&startIndex=${startIndex}`
+        : `${API}/api/package/get-packages?admin=1&searchTerm=${search}&startIndex=${startIndex}`; //all
+    const res = await apiFetch(url);
     const data = await res.json();
     if (data?.packages?.length < 9) {
       setShowMoreBtn(false);
@@ -67,7 +68,7 @@ const AllPackages = () => {
   const handleDelete = async (packageId) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API}/api/package/delete-package/${packageId}`, {
+      const res = await apiFetch(`/api/package/delete-package/${packageId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -156,7 +157,7 @@ const AllPackages = () => {
               >
                 <Link to={`/package/${pack._id}`}>
                   <img
-                    src={`http://localhost:8000/images/${pack.packageImages[0]}`}
+                    src={imageUrl(pack.packageImages[0])}
                     alt="image"
                     className="w-20 h-20 rounded"
                   />

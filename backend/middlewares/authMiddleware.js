@@ -1,52 +1,59 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+import { env } from "../config/env.js";
 
-export const requireSignIn = async (req, res, next) => {
-  if (req?.cookies?.X_TTMS_access_token) {
-    const token = await req.cookies.X_TTMS_access_token;
-    if (!token)
-      return res.status(401).send({
-        success: false,
-        message: "Unautorized: Token not provided!",
-      });
+export const AUTH_COOKIE = "X_TTMS_access_token";
 
-    jwt.verify(token, "bfuiwrht7895t5uith", (err, user) => {
-      if (err)
-        return res.status(403).send({
-          success: false,
-          message: "Forbidden",
-        });
+export const authCookieOptions = {
+  httpOnly: true,
+  maxAge: 4 * 24 * 60 * 60 * 1000,
+  sameSite: env.isProd ? "none" : "lax",
+  secure: env.isProd,
+};
 
-      req.user = user;
-      next();
-    });
-  } else {
-    return res.status(401).send({
-      success: false,
-      message: "Unautorized: Token not provided!",
-    });
+export const signToken = (id) => jwt.sign({ id }, env.jwtSecret, { expiresIn: "4d" });
+
+export const requireSignIn = (req, res, next) => {
+  const token = req?.cookies?.[AUTH_COOKIE];
+  if (!token) {
+    return res.status(401).send({ success: false, message: "Unauthorized: Token not provided!" });
+  }
+  jwt.verify(token, env.jwtSecret, (err, user) => {
+    if (err) return res.status(403).send({ success: false, message: "Forbidden" });
+    req.user = user;
+    next();
+  });
+};
+
+// Decodes the auth cookie if present, never rejects (used by the AI assistant)
+export const optionalAuth = (req, _res, next) => {
+  const token = req?.cookies?.[AUTH_COOKIE];
+  if (!token) return next();
+  jwt.verify(token, env.jwtSecret, (err, user) => {
+    if (!err) req.user = user;
+    next();
+  });
+};
+
+export const isAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select("user_role");
+    if (user?.user_role === 1) {
+      req.isAdmin = true;
+      return next();
+    }
+    return res.status(401).send({ success: false, message: "Unauthorized Access" });
+  } catch (error) {
+    next(error);
   }
 };
 
-//Admin access
-export const isAdmin = async (req, res, next) => {
-   console.log("isAdmin",req.user.id);
+// Sets req.isAdmin on optional-auth routes without rejecting guests
+export const markAdmin = async (req, _res, next) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (user.user_role === 1) {
-      next();
-    } else {
-      return res.status(401).send({
-        success: false,
-        message: "Unautorized Access",
-      });
-    }
+    if (req.user) req.isAdmin = (await User.findById(req.user.id).select("user_role"))?.user_role === 1;
+    next();
   } catch (error) {
-    console.log(error);
-    res.status(401).send({
-      success: false,
-      message: "Error in admin middleware",
-      error,
-    });
+    next(error);
   }
 };

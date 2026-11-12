@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import Chart from "../components/Chart";
-const API = import.meta.env.VITE_API_URL;
+import { imageUrl } from "../../utils/imageUrl";
+import { API_URL as API, apiFetch } from "../../api/client";
 
 const AllBookings = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -15,7 +15,7 @@ const AllBookings = () => {
     setCurrentBookings([]);
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await apiFetch(
           `${API}/api/booking/get-currentBookings?searchTerm=${searchTerm}`,
           {
             method: "GET",
@@ -43,7 +43,7 @@ const AllBookings = () => {
   const handleCancel = async (id) => {
     try {
       setLoading(true);
-      const res = await fetch(
+      const res = await apiFetch(
         `${API}/api/booking/cancel-booking/${id}/${currentUser._id}`,
         {
           method: "POST",
@@ -79,7 +79,6 @@ const AllBookings = () => {
               setSearchTerm(e.target.value);
             }}
           />
-          {currentBookings.length > 0 && <Chart data={currentBookings} />}
         </div>
         {!loading &&
           currentBookings &&
@@ -92,7 +91,7 @@ const AllBookings = () => {
                 <Link to={`/package/${booking?.packageDetails?._id}`}>
                   <img
                     className="w-12 h-12"
-                    src={`http://localhost:8000/images/${booking?.packageDetails?.packageImages[0]}`}
+                    src={imageUrl(booking?.packageDetails?.packageImages[0])}
                     alt="Package Image"
                   />
                 </Link>
